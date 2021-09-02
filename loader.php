@@ -1,0 +1,31 @@
+<?php
+/*
+Plugin Name: Competitions & Leaderboard
+Description: Add competitions, submissions and leaderboard
+Version: 1.0.0
+Text Domain: competitions-leaderboard
+*/
+
+// Define Constants
+
+if ( ! defined( 'CLEAD_VERSION' ) ) {
+	define( 'CLEAD_VERSION', '1.0.0' );
+}
+
+// Plugin Folder Path
+if ( ! defined( 'CLEAD_PATH' ) ) {
+	define( 'CLEAD_PATH', plugin_dir_path( __FILE__ ) );
+}
+
+// Plugin Folder URL
+if ( ! defined( 'CLEAD_URL' ) ) {
+	define( 'CLEAD_URL', plugin_dir_url( __FILE__ ) );
+}
+
+// Plugin Root File
+if ( ! defined( 'CLEAD_FILE' ) ) {
+	define( 'CLEAD_FILE', __FILE__ );
+}
+require CLEAD_PATH . 'vendor/autoload.php';
+require_once CLEAD_PATH . 'inc/Plugin.php';
+new \Clead\Plugin();
