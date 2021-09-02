@@ -106,24 +106,27 @@ $saved_competition = isset( $_POST['competition'] ) ? $_POST['competition'] : ''
         </div>
     </div>
 
-    <div class="form-group">
-        <label class="control-label col-sm-3" for="submission_notes"></label>
-        <div class="col-sm-9">
-            <input type="checkbox" name="tnc" id="submission_tnc" class="submission_tnc">
-			<?php
-			$terms_page = class_exists( Settings::class ) ? Settings::get_option( 'terms_page' ) : '';
+	<?php
+	$terms_page = class_exists( Settings::class ) ? Settings::get_option( 'terms_page' ) : '';
+	if ( ! empty( $terms_page ) ) : ?>
+        <div class="form-group">
+            <label class="control-label col-sm-3" for="submission_notes"></label>
+            <div class="col-sm-9">
+                <input type="checkbox" name="tnc" id="submission_tnc" class="submission_tnc">
+				<?php
 
-			if ( ! empty( $terms_page ) ) {
+
 				echo wp_kses_post(
 					sprintf(
 						__( 'I agree with the <a href="%s">terms and conditions</a>', 'competitions-leaderboard' ),
 						get_permalink( $terms_page )
 					)
 				);
-			}
-			?>
+
+				?>
+            </div>
         </div>
-    </div>
+	<?php endif; ?>
 
     <input type="hidden" name="action" value="iarai_upload"/>
 	<?php wp_nonce_field(
