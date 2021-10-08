@@ -4,6 +4,7 @@ namespace CLead;
 
 use Carbon_Fields\Container;
 use Carbon_Fields\Field;
+use IARAI\Logging;
 
 class Plugin {
 
@@ -183,7 +184,7 @@ class Plugin {
 							$message = 'Submission ID: ' . $submission->ID . '<br>';
 							$message .= 'Score path: ' . $score_path . '<br>';
 							$message .= 'Score: ' . $score . '<br>';
-							//Logging::add( 'Score processing value error', $message, 0, 'submission' );
+							Logging::add( 'Score processing value error', $message, 0, 'submission' );
 						}
 					}
 				}
@@ -667,7 +668,7 @@ class Plugin {
 		$message .= 'IP: ' . $_SERVER['REMOTE_ADDR'] . '<br>';
 		$message .= 'Browser data: ' . $_SERVER['HTTP_USER_AGENT'] . '<br>';
 
-		//Logging::add( $title, $message, $parent, $types );
+		Logging::add( $title, $message, $parent, $types );
 
 	}
 
@@ -747,7 +748,7 @@ class Plugin {
 				if ( $submissions ) {
 					$total_submissions = count( $submissions );
 					if ( $total_submissions >= $limit ) {
-						$errors['general'] = '<div class="alert alert-warning">You have exceeded the total submissions limit!</div>';
+						$errors['general'] = '<div class="alert alert-warning">You have exceeded the total submissions limit! Please remove existing submissions so you can add new ones.</div>';
 						echo wp_json_encode( [ 'errors' => $errors ] );
 						exit;
 					}
@@ -870,7 +871,7 @@ class Plugin {
 					$message .= 'IP: ' . $_SERVER['REMOTE_ADDR'] . '<br>';
 					$message .= 'Browser data: ' . $_SERVER['HTTP_USER_AGENT'] . '<br>';
 
-					//Logging::add( $title, $message, $parent, $types );
+					Logging::add( $title, $message, $parent, $types );
 
 					// $file_type = wp_check_filetype( basename( $data_file['file'] ), null );
 					// Prepare an array of post data for the attachment.
@@ -889,7 +890,7 @@ class Plugin {
 					$message .= 'Username: ' . $user->user_login . '<br>';
 					$message .= 'IP: ' . $_SERVER['REMOTE_ADDR'] . '<br>';
 					$message .= 'Browser data: ' . $_SERVER['HTTP_USER_AGENT'] . '<br>';
-					//Logging::add( 'Submission error', $message, $parent, $types );
+					Logging::add( 'Submission error', $message, $parent, $types );
 
 					$errors['file'] = 'There was an error uploading your file';
 				}

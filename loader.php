@@ -27,5 +27,10 @@ if ( ! defined( 'CLEAD_FILE' ) ) {
 	define( 'CLEAD_FILE', __FILE__ );
 }
 require CLEAD_PATH . 'vendor/autoload.php';
+
+if ( ! class_exists( '\IARAI\Logging' ) ) {
+	require_once CLEAD_PATH . 'lib/Logging.php';
+}
+
 require_once CLEAD_PATH . 'inc/Plugin.php';
 new \Clead\Plugin();
