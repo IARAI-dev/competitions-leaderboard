@@ -22,7 +22,7 @@ class Plugin {
 
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
 		add_action( 'wp_ajax_iarai_file_upload', [ $this, 'iarai_file_upload' ] );
-		add_action( 'wp_ajax_nopriv_iarai_file_upload', [ $this, 'iarai_file_upload' ] );
+		// add_action( 'wp_ajax_nopriv_iarai_file_upload', [ $this, 'iarai_file_upload' ] );
 		add_action( 'wp_ajax_iarai_delete_submission', [ $this, 'ajax_delete_submission' ] );
 
 		add_action( 'wp_ajax_iarai_filter_leaderboard', [ $this, 'ajax_filter_leaderboard' ] );
@@ -1000,6 +1000,7 @@ class Plugin {
 
 				<?php } ?>
 			</td>
+            <td><?php echo get_the_date( 'F j, Y H:i', $submission->ID ) ?></td>
 		</tr>
 		<?php
 		return ob_get_clean();

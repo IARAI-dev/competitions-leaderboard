@@ -87,7 +87,7 @@ jQuery(function ($) {
 			form_data.append('file', file_data);
 		}
 
-		if (! _this.find('.submission_tnc').is(':checked')) {
+		if ( _this.find('.submission_tnc').length > 0 &&  ! _this.find('.submission_tnc').is(':checked')) {
 			_this.find('.response-wrapper').html('<span class="alert alert-warning">' +
 				'You must agree with the terms and conditions!</span>');
 			return;

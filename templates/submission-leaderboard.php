@@ -89,6 +89,7 @@ $submissions = Plugin::query_leaderboard( $competition, '', $sort_order );
         <td>Name</td>
         <td>Team/User</td>
         <td>Score</td>
+        <td>Date</td>
     </tr>
     </thead>
     <tbody class="leaderboard-body">
@@ -107,7 +108,7 @@ $submissions = Plugin::query_leaderboard( $competition, '', $sort_order );
 
 
 	} else {
-		echo '<tr><td colspan="4">' .
+		echo '<tr><td colspan="5">' .
 		     '<p class="lead text-center">Entries are updated hourly. Please check back later!</p>' .
 		     '</td>' .
 		     '</tr>';

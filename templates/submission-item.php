@@ -33,7 +33,7 @@ if ( empty( $delete_submission_option ) ) {
 }
 
 $can_submit = $submission_option === 'yes' || $submission_option === 'guests' || ( ( current_user_can( 'author' ) || current_user_can( 'editor' ) ) && $submission_option === 'editor' );
-$can_delete = $delete_submission_option === 'yes' || ( current_user_can( 'author' ) && $delete_submission_option === 'editor' );
+$can_delete = $delete_submission_option === 'yes' || ( ( current_user_can( 'author' ) || current_user_can( 'editor' ) ) && $delete_submission_option === 'editor' );
 
 if ( $can_submit && $can_delete ) {
 	echo '&nbsp;<span class="badge hover-tip" data-toggle="tooltip" title="Delete this submission" data-placement="top" style="background: red;">' .
