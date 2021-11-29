@@ -105,6 +105,7 @@ if ( function_exists( 'kleo_switch_layout' ) ) {
 
 			<?php
 			$submissions = Plugin::get_submissions( $competition );
+            echo '<!-- '.  count( $submissions ) .'-->';
 			if ( $submissions && count( $submissions ) > 0 ) {
 				wp_enqueue_script( 'iarai-submissions' );
 				include CLEAD_PATH . 'templates/submissions-list.php';

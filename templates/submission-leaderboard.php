@@ -89,7 +89,7 @@ $submissions = Plugin::query_leaderboard( $competition, '', $sort_order );
         <td>Name</td>
         <td>Team/User</td>
         <td>Score</td>
-        <td>Date</td>
+        <td>Date(UTC)</td>
     </tr>
     </thead>
     <tbody class="leaderboard-body">
