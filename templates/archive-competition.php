@@ -82,7 +82,9 @@ if ( function_exists( 'kleo_switch_layout' ) ) {
 		$submission_option = get_term_meta( $competition, '_enable_submissions', true );
 
 		if ( ! is_user_logged_in() && $submission_option !== 'guests' ) {
-			echo '<p class="alert alert-warning submissions-no-user">Please <a class="kleo-show-login" href="#">login/create account</a> to submit or view your submitted data.</p>';
+			echo '<p class="alert alert-warning submissions-no-user">' .
+                 'Please <a class="kleo-show-login" href="'. wp_login_url() .'">' .
+                 'login/create account</a> to submit or view your submitted data.</p>';
 		} else {
 			?>
 
