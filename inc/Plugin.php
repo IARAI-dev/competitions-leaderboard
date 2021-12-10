@@ -74,7 +74,6 @@ class Plugin {
 	}
 
 	public function plugins_loaded() {
-
 		\Carbon_Fields\Carbon_Fields::boot();
 	}
 
@@ -468,11 +467,12 @@ class Plugin {
 		}
 
 		?>
-		<tr class="form-field">
-			<th scope="row" valign="top">
-				<label for="cat_description"><?php esc_html_e( 'Description', 'competitions-leaderboard' ); ?></label></th>
-			<td>
-				<div class="form-field term-meta-wrap">
+        <tr class="form-field">
+            <th scope="row" valign="top">
+                <label for="cat_description"><?php esc_html_e( 'Description', 'competitions-leaderboard' ); ?></label>
+            </th>
+            <td>
+                <div class="form-field term-meta-wrap">
 					<?php
 
 					$settings = array(
@@ -485,9 +485,9 @@ class Plugin {
 					wp_editor( wp_kses_post( $description ), 'cat_description', $settings );
 
 					?>
-				</div>
-			</td>
-		</tr>
+                </div>
+            </td>
+        </tr>
 
 		<?php
 
@@ -497,11 +497,11 @@ class Plugin {
 		global $current_screen;
 		if ( $current_screen->id == 'edit-competition' ) {
 			?>
-			<script type="text/javascript">
+            <script type="text/javascript">
                 jQuery(function ($) {
                     $('textarea#tag-description, textarea#description').closest('.form-field').remove();
                 });
-			</script>
+            </script>
 			<?php
 		}
 	}
@@ -513,9 +513,15 @@ class Plugin {
 			$postfix = '/' . $this->competition;
 		}
 
-		$dirs['subdir'] = '/iarai-submissions' . $postfix;
-		$dirs['path']   = $dirs['basedir'] . '/iarai-submissions' . $postfix;
-		$dirs['url']    = $dirs['baseurl'] . '/iarai-submissions' . $postfix;
+		$dir = '/iarai-submissions';
+
+		if ( defined( 'COMPETITION_DIR' ) && ! empty( COMPETITION_DIR ) ) {
+			$dir = COMPETITION_DIR;
+		}
+
+		$dirs['subdir'] = $dir . $postfix;
+		$dirs['path']   = $dirs['basedir'] . $dir . $postfix;
+		$dirs['url']    = $dirs['baseurl'] . $dir . $postfix;
 
 		return $dirs;
 	}
@@ -984,24 +990,24 @@ class Plugin {
 
 		ob_start();
 		?>
-		<tr>
-			<td class="submission-count"><?php echo $count; ?></td>
-			<td><?php echo esc_html( get_the_title( $submission ) ); ?></td>
-			<td><?php echo esc_html( $name ); ?></td>
-			<td>
+        <tr>
+            <td class="submission-count"><?php echo $count; ?></td>
+            <td><?php echo esc_html( get_the_title( $submission ) ); ?></td>
+            <td><?php echo esc_html( $name ); ?></td>
+            <td>
 				<?php echo get_post_meta( $submission->ID, '_score', true ); ?>
 				<?php if ( $is_current_user && self::get_log_content( $submission->ID ) !== false ) { ?>
-					<span data-placement="top" class="submission-log click-pop" data-toggle="popover"
-					      data-title="Submission info"
-					      data-content="<?php echo esc_attr( self::get_log_content( $submission->ID ) ); ?>">
+                    <span data-placement="top" class="submission-log click-pop" data-toggle="popover"
+                          data-title="Submission info"
+                          data-content="<?php echo esc_attr( self::get_log_content( $submission->ID ) ); ?>">
 							<i class="icon-info-circled"></i>
 						</span>
 
 
 				<?php } ?>
-			</td>
+            </td>
             <td><?php echo get_the_date( 'F j, Y H:i', $submission->ID ) ?></td>
-		</tr>
+        </tr>
 		<?php
 		return ob_get_clean();
 	}
@@ -1138,11 +1144,11 @@ class Plugin {
 			global $current_screen;
 
 			?>
-			<script type="text/javascript">
+            <script type="text/javascript">
                 jQuery(document).ready(function ($) {
                     jQuery(jQuery(".wrap h1")[0]).append("<a onclick=\"window.location='" + window.location.href + "&export-csv'\" id='iarai-export-csv' class='add-new-h2'>Export CSV</a>");
                 });
-			</script>
+            </script>
 			<?php
 		} );
 
