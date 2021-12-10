@@ -28,7 +28,7 @@ if ( ! defined( 'CLEAD_FILE' ) ) {
 }
 require CLEAD_PATH . 'vendor/autoload.php';
 
-if ( ! class_exists( '\IARAI\Logging' ) ) {
+if ( ! isset( $GLOBALS['wp_logs'] ) && ! class_exists( '\IARAI\Logging' ) ) {
 	require_once CLEAD_PATH . 'lib/Logging.php';
 }
 
