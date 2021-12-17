@@ -71,6 +71,11 @@ class Plugin {
 		// Email custom column
 		add_filter( 'manage_edit-submission_columns', [ $this, 'custom_add_new_columns' ] );
 		add_action( 'manage_submission_posts_custom_column', [ $this, 'custom_manage_new_columns' ], 10, 2 );
+
+		// Show the taxonomy ID
+		add_filter( "manage_edit-competition_columns",          [ $this, 'add_tax_col' ] );
+		add_filter( "manage_edit-competition_sortable_columns", [ $this,'add_tax_col' ] );
+		add_filter( "manage_competition_custom_column",         [ $this, 'show_tax_id' ], 10, 3 );
 	}
 
 	public function plugins_loaded() {
@@ -117,6 +122,15 @@ class Plugin {
 		}
 
 		return $schedules;
+	}
+
+	public function add_tax_col( $new_columns ) {
+		$new_columns['tax_id'] = 'ID';
+
+		return $new_columns;
+	}
+	public function show_tax_id( $value, $name, $id ) {
+		return 'tax_id' === $name ? $id : $value;
 	}
 
 	public function do_cron_scores() {
