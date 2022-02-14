@@ -17,8 +17,6 @@
  * @since Kleo 1.0
  */
 
-use CLead\Plugin;
-
 $competition = get_queried_object_id();
 
 get_header();
@@ -106,7 +104,8 @@ if ( function_exists( 'kleo_switch_layout' ) ) {
             <div id="my-submissions" class="hr-title hr-full hr-left"><abbr>My submissions</abbr></div>
 
 			<?php
-			$submissions = Plugin::get_submissions( $competition );
+			$submissions = \CLead\Submissions::get_submissions( $competition );
+
             echo '<!-- '.  count( $submissions ) .'-->';
 			if ( $submissions && count( $submissions ) > 0 ) {
 				wp_enqueue_script( 'iarai-submissions' );

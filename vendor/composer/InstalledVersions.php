@@ -14,24 +14,24 @@ class InstalledVersions
 private static $installed = array (
   'root' => 
   array (
-    'pretty_version' => '1.0.0+no-version-set',
-    'version' => '1.0.0.0',
+    'pretty_version' => 'dev-master',
+    'version' => 'dev-master',
     'aliases' => 
     array (
     ),
-    'reference' => NULL,
-    'name' => '__root__',
+    'reference' => '0de29a74a1423d74b6fbc75950f96ac318c6a5e9',
+    'name' => 'codezz/competitions-leaderboard',
   ),
   'versions' => 
   array (
-    '__root__' => 
+    'codezz/competitions-leaderboard' => 
     array (
-      'pretty_version' => '1.0.0+no-version-set',
-      'version' => '1.0.0.0',
+      'pretty_version' => 'dev-master',
+      'version' => 'dev-master',
       'aliases' => 
       array (
       ),
-      'reference' => NULL,
+      'reference' => '0de29a74a1423d74b6fbc75950f96ac318c6a5e9',
     ),
     'htmlburger/carbon-fields' => 
     array (
@@ -41,16 +41,6 @@ private static $installed = array (
       array (
       ),
       'reference' => 'dd5663e14c6db365323b688dbae1cfbeaf14bee7',
-    ),
-    'roave/security-advisories' => 
-    array (
-      'pretty_version' => 'dev-latest',
-      'version' => 'dev-latest',
-      'aliases' => 
-      array (
-        0 => '9999999-dev',
-      ),
-      'reference' => '8586b1981b3f897bcc2c50c175127fc8ea85eb6c',
     ),
   ),
 );

@@ -10,6 +10,7 @@ class ComposerStaticInitb2487d401450ed5913aa89173346ab96
         'C' => 
         array (
             'Carbon_Fields\\' => 14,
+            'CLead\\' => 6,
         ),
     );
 
@@ -17,6 +18,10 @@ class ComposerStaticInitb2487d401450ed5913aa89173346ab96
         'Carbon_Fields\\' => 
         array (
             0 => __DIR__ . '/..' . '/htmlburger/carbon-fields/core',
+        ),
+        'CLead\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/inc',
         ),
     );
 

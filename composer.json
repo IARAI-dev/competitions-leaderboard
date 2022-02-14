@@ -1,9 +1,15 @@
 {
-    "require": {
-        "htmlburger/carbon-fields": "^3.3"
+  "name": "codezz/competitions-leaderboard",
+  "type": "project",
+  "require": {
+    "htmlburger/carbon-fields": "^3.3"
+  },
+  "require-dev": {
+    "roave/security-advisories": "dev-latest"
+  },
+  "autoload": {
+    "psr-4": {
+      "CLead\\": "inc/"
     }
-    ,
-    "require-dev": {
-        "roave/security-advisories": "dev-latest"
-    }
+  }
 }
