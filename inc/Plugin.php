@@ -17,6 +17,10 @@ class Plugin {
 	private $user = null;
 
 	public function __construct() {
+
+        require_once CLEAD_PATH . 'inc/Terms.php';
+        new Terms();
+
 		add_action( 'init', [ $this, 'init' ] );
 		add_action( 'plugins_loaded', [ $this, 'plugins_loaded' ] );
 
@@ -1021,7 +1025,7 @@ class Plugin {
 
 				<?php } ?>
             </td>
-            <td><?php echo get_the_date( 'F j, Y H:i', $submission->ID ) ?></td>
+            <td><?php echo get_the_date( 'M j, Y H:i', $submission->ID ) ?></td>
         </tr>
 		<?php
 		return ob_get_clean();

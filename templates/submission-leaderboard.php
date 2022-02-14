@@ -58,6 +58,9 @@ $submissions = Plugin::query_leaderboard( $competition, '', $sort_order );
     .submission-log {
         cursor: pointer;
     }
+    tbody td {
+        word-break: break-word;
+    }
 
 </style>
 
