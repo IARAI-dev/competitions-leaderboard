@@ -91,30 +91,47 @@ class Plugin {
 		$competition = $terms[0];
 		$data        = [];
 
-		$challenges = get_terms( array(
-			'taxonomy'   => 'competition',
-			'hide_empty' => false,
-			'parent'     => $competition->term_id
-
-		) );
 
 		$main_fields = [
+			'competition_main_long_name',
 			'competition_logo',
 			'competition_main_bg_image',
 			'competition_main_short_description',
 			'competition_main_image',
-
+			'competition_bullets',
+			'competition_main_video',
+			'competition_long_description',
+			'competition_secondary_image',
+			'competition_data_description',
+			'competition_data_image',
+			'competition_data_link',
+			'competition_data_github',
+			'competition_challenges',
 		];
 
 		$data['main'] = [];
 
 		foreach ( $main_fields as $field ) {
-			$data['main'][ $field ] = get_term_meta( $competition->term_id, '_' . $field, true );
+			$data['main'][ $field ] = carbon_get_term_meta( $competition->term_id, $field );
 		}
 
-		$data['challenge'] = $challenges;
+		$data['challenge'] = carbon_get_term_meta( $competition->term_id, 'competition_challenges' );
+
+		$connect_fields = [
+			'competition_connect_forum',
+			'competition_connect_github',
+			'competition_connect_scientific_committee',
+			'competition_connect_organising_committee',
+			'competition_connect_contact',
+			'competition_connect_address',
+		];
+        $data['connect']   = [];
+
+		foreach ( $connect_fields as $field ) {
+			$data['connect'][ $field ] = carbon_get_term_meta( $competition->term_id, $field );
+		}
+
 		$data['events']    = [];
-		$data['connect']   = [];
 
 		return $data;
 	}
@@ -172,22 +189,33 @@ class Plugin {
 
 			$competition_fields
 				->add_tab(
-					__( 'Main' ),
+					__( 'Main page' ),
 					array(
 
 						Field::make( 'checkbox', 'competition_is_main', 'Main competition' )
 						     ->set_help_text( 'Is this the current main competition?' ),
 
-						Field::make( 'image', 'competition_logo', 'Logo' )
+						Field::make( 'text', 'competition_main_long_name', 'Competition long name' )
+						     ->set_attribute( 'placeholder', 'Traffic Map Movie Forecasting 2021' )
+						     ->set_required( true ),
+
+						Field::make( 'image', 'competition_logo', 'Competition Logo' )
 						     ->set_value_type( 'url' )
-						     ->set_width( 50 ),
+						     ->set_width( 50 )
+						     ->set_required( true ),
 						Field::make( 'image', 'competition_main_bg_image', 'Background image' )
 						     ->set_value_type( 'url' )
-						     ->set_width( 50 ),
+						     ->set_width( 50 )
+						     ->set_required( true ),
 
-						Field::make( 'rich_text', 'competition_main_short_description', 'Short description' ),
+						Field::make( 'textarea', 'competition_main_short_description', 'Short description' )
+						     ->set_attribute( 'maxLength', 1500 )
+						     ->set_help_text( 'Max 1500 characters' )
+						     ->set_required( true ),
+
 						Field::make( 'image', 'competition_main_image', 'Main image' )
 						     ->set_value_type( 'url' ),
+
 						Field::make( 'complex', 'competition_bullets', 'Bullet points' )
 						     ->setup_labels( array(
 							     'plural_name'   => 'Bullet Points',
@@ -197,19 +225,42 @@ class Plugin {
 						     ->set_min( 1 )
 						     ->set_max( 5 )
 						     ->add_fields( array(
-							     Field::make( 'text', 'bullet', 'Bullet point' ),
-						     ) ),
+							     Field::make( 'text', 'bullet', 'Bullet point' )
+							          ->set_attribute( 'placeholder', 'Study high-resolution multi-channel traffic movies of entire cities with road maps.' )
+							          ->set_attribute( 'maxLength', 120 )
+							          ->set_help_text( 'Max 120 characters' ),
+						     ) )
+						     ->set_help_text( 'Max 5 entries' )
+						     ->set_required( true ),
+
 						Field::make( 'text', 'competition_main_video', 'Youtube Video Link ' ),
 
 					) )
 				->add_tab(
 					__( 'Data' ),
 					array(
-						Field::make( 'rich_text', 'competition_data_description', 'Data description' ),
+						Field::make( 'textarea', 'competition_long_description', 'Long description' )
+						     ->set_attribute( 'maxLength', 2500 )
+						     ->set_help_text( 'Max 2500 characters' )
+						     ->set_required( true ),
+
+						Field::make( 'image', 'competition_secondary_image', 'Secondary image' )
+						     ->set_value_type( 'url' ),
+
+						Field::make( 'textarea', 'competition_data_description', 'Data description' )
+						     ->set_attribute( 'maxLength', 2500 )
+						     ->set_help_text( 'Max 2500 characters' )
+						     ->set_required( true ),
+
+						Field::make( 'image', 'competition_data_image', 'Data image' )
+						     ->set_value_type( 'url' ),
+
 						Field::make( 'text', 'competition_data_link', 'Get Data URL' )
-						     ->set_attribute( 'type', 'url' ),
-						Field::make( 'text', 'competition_data_github', 'Github URL' )
-						     ->set_attribute( 'type', 'url' ),
+						     ->set_attribute( 'type', 'url' )
+							->set_attribute( 'placeholder', 'https://' ),
+						Field::make( 'text', 'competition_data_github', 'Github/Gitlab URL' )
+						     ->set_attribute( 'type', 'url' )
+						     ->set_attribute( 'placeholder', 'https://' ),
 
 					) )
 				->add_tab(
@@ -222,19 +273,41 @@ class Plugin {
 						     ) )
 						     ->set_layout( 'tabbed-horizontal' )
 						     ->set_min( 1 )
-						     ->set_max( 3 )
 						     ->add_fields( array(
-							     Field::make( 'text', 'name', 'Challenge name' ),
-							     Field::make( 'rich_text', 'description', 'Challenge description' ),
+							     Field::make( 'text', 'name', 'Challenge name' )
+							          ->set_attribute( 'maxLength', 80 )
+							          ->set_help_text( 'Max 80 characters' )
+							          ->set_attribute( 'placeholder', 'IEEE Big Data - Stage 1 (challenge 2 would be IEEE Big Data - Stage 2)' )
+							          ->set_required( true ),
 
-							     Field::make( 'html', 'timeline_html' )->set_html( '<h2>Timeline</h2>' ),
+							     Field::make( 'textarea', 'description', 'Challenge description' )
+							          ->set_attribute( 'maxLength', 1500 )
+							          ->set_help_text( 'Max 80 characters' )
+							          ->set_required( true ),
 
-							     Field::make( 'date', 'timeline_1', 'Submission to leaderboard' ),
-							     Field::make( 'date', 'timeline_2', 'Abstract and code sub.' ),
-							     Field::make( 'date', 'timeline_3', 'Prerecorded presentation sub.' ),
-							     Field::make( 'date', 'timeline_4', 'Announcement of the winners' ),
+							     Field::make( 'complex', 'competition_timeline', 'Timeline' )
+							          ->setup_labels( array(
+								          'plural_name'   => 'Timeline',
+								          'singular_name' => 'Timeline',
+							          ) )
+							          ->set_layout( 'tabbed-horizontal' )
+							          ->set_min( 1 )
+							          ->set_max( 6 )
+							          ->add_fields( array(
+								          Field::make( 'text', 'name', 'Timeline name' )
+								               ->set_attribute( 'placeholder', 'Eq.: Submission to leaderboard.' )
+								               ->set_attribute( 'maxLength', 100 )
+								               ->set_help_text( 'Max 100 characters' ),
+								          Field::make( 'date', 'date', 'Date' ),
+							          ) )
+							          ->set_help_text( 'Max 6 entries' )
+							          ->set_required( true ),
 
 							     Field::make( 'complex', 'prizes', 'Prizes' )
+								     ->setup_labels( array(
+									     'plural_name'   => 'Prizes',
+									     'singular_name' => 'Prize',
+								     ) )
 							          ->set_layout( 'tabbed-horizontal' )
 							          ->set_min( 1 )
 							          ->set_max( 3 )
@@ -243,6 +316,10 @@ class Plugin {
 							          ) ),
 
 							     Field::make( 'complex', 'competition_awards', 'Awards' )
+								     ->setup_labels( array(
+									     'plural_name'   => 'Awards',
+									     'singular_name' => 'Award',
+								     ) )
 							          ->set_layout( 'tabbed-horizontal' )
 							          ->set_min( 1 )
 							          ->set_max( 3 )
@@ -252,8 +329,12 @@ class Plugin {
 								          Field::make( 'text', 'affiliations', 'Affiliations' ),
 								          Field::make( 'text', 'award', 'Award' ),
 							          ) )
-								     ->set_header_template( ' <%- team_name ? team_name : ($_index+1) %>' ),
+							          ->set_header_template( ' <%- team_name ? team_name : ($_index+1) %>' ),
 							     Field::make( 'complex', 'competition_special_prizes', 'Special Prizes' )
+								     ->setup_labels( array(
+									     'plural_name'   => 'Special Prizes',
+									     'singular_name' => 'Special Prize',
+								     ) )
 							          ->set_layout( 'tabbed-horizontal' )
 							          ->set_min( 1 )
 							          ->set_max( 3 )
@@ -263,83 +344,100 @@ class Plugin {
 								          Field::make( 'text', 'affiliations', 'Affiliations' ),
 								          Field::make( 'text', 'award', 'Award' ),
 							          ) )
-								     ->set_header_template( ' <%- team_name ? team_name : ($_index+1) %>' ),
+							          ->set_header_template( ' <%- team_name ? team_name : ($_index+1) %>' ),
 
-							     Field::make( 'html', 'leaderboard_html' )->set_html( '<h2>Leaderboard</h2>' ),
+							     Field::make( 'select', 'competition_enable_leaderboards', 'Enable Leaderboard' )
+							          ->add_options( array(
+								          'yes'    => 'Yes',
+								          'editor' => 'Just for site Editors and Admins',
+								          'no'     => 'No',
+							          ) ),
 
-							     Field::make( 'select', 'competition_leaderboard', 'Enable Leaderboard' )
-							          ->add_options( array(
-								          'yes'    => 'Yes',
-								          'editor' => 'Just for site Editors and Admins',
-								          'no'     => 'No',
-							          ) ),
-							     Field::make( 'select', 'enable_submissions', 'Enable Submissions' )
-							          ->add_options( array(
-								          'yes'    => 'Yes',
-								          'editor' => 'Just for site Editors and Admins',
-								          'guests' => 'Also for Guests',
-								          'no'     => 'No',
-							          ) ),
-							     Field::make( 'text', 'competition_limit_submit', 'Limit submissions number' )
-							          ->set_attribute( 'type', 'number' )
-							          ->set_conditional_logic( array(
-								          array(
-									          'field'   => 'enable_submissions',
-									          'value'   => 'no',
-									          'compare' => '!=',
-								          )
-							          ) ),
-							     Field::make( 'text', 'competition_file_types', 'Allow specific file types' )
-							          ->set_help_text( 'Comma separated allowed file extensions(Ex: jpg,png,gif,pdf)' )
-							          ->set_conditional_logic( array(
-								          array(
-									          'field'   => 'enable_submissions',
-									          'value'   => 'no',
-									          'compare' => '!=',
-								          )
-							          ) ),
-							     Field::make( 'select', 'enable_submission_deletion', 'Enable Submission Deletion' )
-							          ->add_options( array(
-								          'yes'    => 'Yes',
-								          'editor' => 'Just for site Editors and Admins',
-								          'no'     => 'No',
+							     Field::make( 'complex', 'competition_leaderboards', 'Leaderboards' )
+								     ->set_conditional_logic( array(
+									     array(
+										     'field'   => 'competition_enable_leaderboards',
+										     'value'   => 'no',
+										     'compare' => '!=',
+									     )
+								     ) )
+								     ->setup_labels( array(
+									     'plural_name'   => 'Leaderboards',
+									     'singular_name' => 'Leaderboard',
+								     ) )
+							          ->set_layout( 'tabbed-horizontal' )
+							          ->set_min( 1 )
+							          ->add_fields( array(
+								          Field::make( 'text', 'name', 'Name' ),
+
+								          Field::make( 'select', 'enable_submissions', 'Enable Submissions' )
+								               ->add_options( array(
+									               'yes'    => 'Yes',
+									               'editor' => 'Just for site Editors and Admins',
+									               'guests' => 'Also for Guests',
+									               'no'     => 'No',
+								               ) ),
+								          Field::make( 'text', 'competition_limit_submit', 'Limit submissions number' )
+								               ->set_attribute( 'type', 'number' )
+								               ->set_conditional_logic( array(
+									               array(
+										               'field'   => 'enable_submissions',
+										               'value'   => 'no',
+										               'compare' => '!=',
+									               )
+								               ) ),
+								          Field::make( 'text', 'competition_file_types', 'Allow specific file types' )
+								               ->set_help_text( 'Comma separated allowed file extensions(Ex: jpg,png,gif,pdf)' )
+								               ->set_conditional_logic( array(
+									               array(
+										               'field'   => 'enable_submissions',
+										               'value'   => 'no',
+										               'compare' => '!=',
+									               )
+								               ) ),
+								          Field::make( 'select', 'enable_submission_deletion', 'Enable Submission Deletion' )
+								               ->add_options( array(
+									               'yes'    => 'Yes',
+									               'editor' => 'Just for site Editors and Admins',
+									               'no'     => 'No',
+								               ) )
+								               ->set_conditional_logic( array(
+									               array(
+										               'field'   => 'enable_submissions',
+										               'value'   => 'no',
+										               'compare' => '!=',
+									               )
+								               ) ),
+								          Field::make( 'date', 'competition_start_date', 'Competition Start Date' ),
+								          Field::make( 'date', 'competition_end_date', 'Competition End Date' ),
+								          Field::make( 'text', 'competition_google_label', 'Analytics Event Label' )
+								               ->set_conditional_logic( array(
+									               array(
+										               'field'   => 'competition_stats_type',
+										               'value'   => 'analytics',
+										               'compare' => '=',
+									               )
+								               ) ),
+								          /*Field::make( 'text', 'competition_score_decimals', 'Score decimals' )
+											   ->set_attribute( 'type', 'number' )*/
+								          Field::make( 'select', 'competition_score_sort', 'Leaderboard Score Sorting' )
+								               ->add_options( array(
+									               'asc'  => 'Ascending',
+									               'desc' => 'Descending',
+									               'abs'  => 'Absolute Zero',
+								               ) ),
+								          Field::make( 'select', 'competition_cron_frequency', "Cron Frequency" )
+								               ->add_options( [
+									               '10' => '10 minutes',
+									               '20' => '20 minutes',
+									               '30' => '30 minutes'
+								               ] ),
 							          ) )
-							          ->set_conditional_logic( array(
-								          array(
-									          'field'   => 'enable_submissions',
-									          'value'   => 'no',
-									          'compare' => '!=',
-								          )
-							          ) ),
-							     Field::make( 'date', 'competition_start_date', 'Competition Start Date' ),
-							     Field::make( 'date', 'competition_end_date', 'Competition End Date' ),
-							     Field::make( 'text', 'competition_google_label', 'Analytics Event Label' )
-							          ->set_conditional_logic( array(
-								          array(
-									          'field'   => 'competition_stats_type',
-									          'value'   => 'analytics',
-									          'compare' => '=',
-								          )
-							          ) ),
-							     /*Field::make( 'text', 'competition_score_decimals', 'Score decimals' )
-									  ->set_attribute( 'type', 'number' )*/
-							     Field::make( 'select', 'competition_score_sort', 'Leaderboard Score Sorting' )
-							          ->add_options( array(
-								          'asc'  => 'Ascending',
-								          'desc' => 'Descending',
-								          'abs'  => 'Absolute Zero',
-							          ) ),
-							     Field::make( 'select', 'competition_cron_frequency', "Cron Frequency" )
-							          ->add_options( [
-								          '10' => '10 minutes',
-								          '20' => '20 minutes',
-								          '30' => '30 minutes'
-							          ] ),
+								     ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
 
 						     ) )
 						     ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
 					) )
-
 				->add_tab(
 					__( 'Connect' ),
 					array(
@@ -355,7 +453,7 @@ class Plugin {
 								     ->set_value_type( 'url' ),
 								Field::make( 'text', 'description', 'Description' ),
 							) )
-							->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
+						     ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
 						Field::make( 'complex', 'competition_connect_organising_committee', 'Organising Committee' )
 						     ->set_layout( 'tabbed-horizontal' )
 						     ->set_min( 1 )
@@ -366,14 +464,14 @@ class Plugin {
 								     ->set_value_type( 'url' ),
 								Field::make( 'text', 'description', 'Description' ),
 							) )
-							->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
+						     ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
 						Field::make( 'text', 'competition_connect_contact', 'Contact email' ),
 						Field::make( 'text', 'competition_connect_address', 'Contact Address' ),
 					) )
 				->add_tab(
 					__( 'Deprecated' ),
 					array(
-						Field::make( 'html', 'timeline_html' )->set_html( '<h2>Please ignore all these fields.</h2>' ),
+						Field::make( 'html', 'deprecated_html' )->set_html( '<h2>Please ignore all these fields.</h2>' ),
 
 						Field::make( 'rich_text', 'competition_pre_text', 'Before Text(Deprecated)' ),
 						Field::make( 'select', 'competition_leaderboard', 'Enable Leaderboard' )
