@@ -74,6 +74,8 @@ jQuery(function ($) {
 		form_data.append('security', iaraiSubmissionsParams.ajaxNonce);
 		form_data.append('title', $(this).find('.submission_name').val());
 		form_data.append('competition', $(this).find('.submission_competition').val());
+		form_data.append('challenge', $(this).find('.submission_challenge').val());
+		form_data.append('leaderboard', $(this).find('.submission_leaderboard').val());
 		form_data.append('notes', $(this).find('.submission_notes').val());
 		form_data.append('team', $(this).find('.submission_team').val());
 		form_data.append('pass', $(this).find('.submission_pass').val());

@@ -54,6 +54,13 @@ $saved_competition = isset( $_POST['competition'] ) ? $_POST['competition'] : ''
 	endif;
 	?>
 
+    <?php
+    /* TODO Send the actual challenge and leaderboard slugs */
+    ?>
+
+    <input class="submission_challenge" name="challenge" type="hidden" value="challenge-1">
+    <input class="submission_leaderboard" name="leaderboard" type="hidden" value="leaderboard-1">
+
 	<?php if ( $competition_page ) : ?>
         <input class="submission_competition" name="competition" type="hidden"
                value="<?php echo esc_attr( $object_id ); ?>">

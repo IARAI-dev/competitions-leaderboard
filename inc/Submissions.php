@@ -90,24 +90,64 @@ class Submissions {
 			echo wp_json_encode( [ 'errors' => $errors ] );
 			exit;
 		}
-
 		$this->user = get_user_by( 'id', $user_id );
 
+		$challenge   = null;
+		$leaderboard = null;
+
+		// get 2.0 challenges.
+		if ( isset( $_POST['challenge'], $_POST['leaderboard'] ) ) {
+
+			$challenge   = sanitize_text_field( $_POST['challenge'] );
+			$leaderboard = sanitize_text_field( $_POST['leaderboard'] );
+
+			$challenge_data   = [];
+			$leaderboard_data = [];
+
+			$competition_challenges = carbon_get_term_meta( $competition, 'competition_challenges' );
+
+			if ( $competition_challenges && ! empty( $competition_challenges ) ) {
+				foreach ( $competition_challenges as $competition_challenge ) {
+					if ( sanitize_title_with_dashes( $challenge ) === sanitize_title_with_dashes( $competition_challenge['name'] ) ) {
+						$challenge_data         = $competition_challenge;
+						$challenge_data['slug'] = sanitize_title_with_dashes( $competition_challenge['name'] );
+
+						if ( isset( $competition_challenge['competition_leaderboards'] ) && ! empty( $competition_challenge['competition_leaderboards'] ) ) {
+							foreach ( $competition_challenge['competition_leaderboards'] as $lb ) {
+								if ( sanitize_title_with_dashes( $leaderboard ) === sanitize_title_with_dashes( $lb['name'] ) ) {
+									$leaderboard_data         = $lb;
+									$leaderboard_data['slug'] = sanitize_title_with_dashes( $lb['name'] );
+									break 2;
+								}
+							}
+						}
+						break;
+					}
+				}
+			}
+		}
+
 		// return error if limit exceeded
-		$limit = get_term_meta( $competition, '_competition_limit_submit', true );
+		if ( ! empty( $leaderboard_data ) ) {
+			$limit = $leaderboard_data['competition_limit_submit'];
+		} else {
+			$limit = get_term_meta( $competition, '_competition_limit_submit', true );
+		}
+
+
 		if ( $limit && (int) $limit > 0 ) {
 
-			$submissions = self::get_submissions( $competition );
+			$submissions = self::get_submissions( $competition, null, $challenge, $leaderboard );
 
 			if ( $submissions ) {
 				$total_submissions = count( $submissions );
-				if ( $total_submissions >= $limit ) {
+
+				if ( $total_submissions >= (int) $limit ) {
 					$errors['general'] = '<div class="alert alert-warning">You have exceeded the total submissions limit! Please remove existing submissions so you can add new ones.</div>';
 					echo wp_json_encode( [ 'errors' => $errors ] );
 					exit;
 				}
 			}
-
 		}
 
 		if ( $_FILES['file']['name'] == '' ) {
@@ -120,7 +160,11 @@ class Submissions {
 		$file_type     = strtolower( $file_type[ count( $file_type ) - 1 ] );
 
 		//Get allowed file extensions
-		$extension_restrict = get_term_meta( $competition, '_competition_file_types', true );
+		if ( ! empty( $leaderboard_data ) ) {
+			$extension_restrict = $leaderboard_data['competition_file_types'];
+		} else {
+			$extension_restrict = get_term_meta( $competition, '_competition_file_types', true );
+		}
 
 		if ( $extension_restrict && '' !== $extension_restrict ) {
 			$extension_restrict = explode( ',', $extension_restrict );
@@ -212,13 +256,14 @@ class Submissions {
 				// Set competition term.
 				wp_set_post_terms( $pid, $competition, 'competition' );
 
-				if ( isset( $_POST['challenge'] ) ) {
-					$challenge = sanitize_text_field( $_POST['challenge'] );
+				//Set Challenge term
+				if ( ! empty( $challenge_data ) ) {
+					wp_set_post_terms( $pid, $competition . '-' . $challenge_data['slug'], 'challenge' );
 				}
 
-				//Set Challenge term
-				if ( isset( $challenge ) ) {
-					wp_set_post_terms( $pid, $competition . '-' . $challenge, 'challenge' );
+				//Set Leaderboard term
+				if ( ! empty( $leaderboard_data ) ) {
+					wp_set_post_terms( $pid, $competition . '-' . $leaderboard_data['slug'], 'leaderboard' );
 				}
 
 				// Save file name to the submission
@@ -397,7 +442,7 @@ class Submissions {
 	 *
 	 * @return bool|\WP_Post[]
 	 */
-	public static function get_submissions( $competition = null, $user_id = null ) {
+	public static function get_submissions( $competition = null, $user_id = null, $challenge = null, $leaderboard = null ) {
 
 		if ( $user_id === null && is_user_logged_in() ) {
 			$user_id = get_current_user_id();
@@ -414,17 +459,34 @@ class Submissions {
 			'author'         => $user_id,
 		];
 
+		$args['tax_query'] = [];
 
 		if ( $competition !== null ) {
-			$args['tax_query'] = [
+			$args['tax_query'][] =
 				[
 					'taxonomy'         => 'competition',
 					'field'            => 'term_id',
 					'terms'            => $competition,
 					'include_children' => false
-				]
-			];
+				];
+		}
 
+		if ( $challenge !== null ) {
+			$args['tax_query'][] =
+				[
+					'taxonomy' => 'challenge',
+					'field'    => 'slug',
+					'terms'    => $competition . '-' . $challenge,
+				];
+		}
+
+		if ( $leaderboard !== null ) {
+			$args['tax_query'][] =
+				[
+					'taxonomy' => 'leaderboard',
+					'field'    => 'slug',
+					'terms'    => $competition . '-' . $leaderboard,
+				];
 		}
 
 		return get_posts( $args );
@@ -437,6 +499,26 @@ class Submissions {
 		}
 
 		return $score_path_parts['dirname'] . '/' . $score_path_parts['filename'] . '.score';
+	}
+
+	public function change_upload_dir( $dirs ) {
+
+		$postfix = '';
+		if ( $this->competition != '' ) {
+			$postfix = '/' . $this->competition;
+		}
+
+		$dir = '/iarai-submissions';
+
+		if ( defined( 'COMPETITION_DIR' ) && ! empty( COMPETITION_DIR ) ) {
+			$dir = COMPETITION_DIR;
+		}
+
+		$dirs['subdir'] = $dir . $postfix;
+		$dirs['path']   = $dirs['basedir'] . $dir . $postfix;
+		$dirs['url']    = $dirs['baseurl'] . $dir . $postfix;
+
+		return $dirs;
 	}
 
 

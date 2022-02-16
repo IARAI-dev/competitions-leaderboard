@@ -152,6 +152,24 @@ class Plugin {
 		}
 
 		if ( $page === 'challenge' ) {
+			if ( ! empty( $data['competition_challenges'] ) ) {
+				foreach ( $data['competition_challenges'] as $k => $challenge ) {
+					$data['competition_challenges'][ $k ]['slug'] = sanitize_title_with_dashes( $challenge['name'] );
+
+					if ( ! empty( $challenge['competition_timeline'] ) ) {
+						foreach ( $challenge['competition_timeline'] as $j => $timeline ) {
+							$data['competition_challenges'][ $k ]['competition_timeline'][ $j ]['label'] = self::$timeline_types[ $timeline['name'] ];
+						}
+					}
+
+					if ( ! empty( $challenge['competition_leaderboards'] ) ) {
+						foreach ( $challenge['competition_leaderboards'] as $i => $leaderboard ) {
+							$data['competition_challenges'][ $k ]['competition_leaderboards'][ $i ]['slug'] = sanitize_title_with_dashes( $leaderboard['name'] );
+						}
+					}
+				}
+			}
+
 			$data['generalData'] = [
 				'timelineOptions' => self::$timeline_types
 			];
@@ -334,12 +352,12 @@ class Plugin {
 							          ->set_max( 3 )
 							          ->add_fields( array(
 								          Field::make( 'textarea', 'prize', 'Prize' )
-									          ->set_attribute( 'placeholder', '"Voucher or cash prize worth {AMOUNT}EUR to the participant/team and one free {CONFERENCE NAME AND YEAR} conference registration"' )
-									          ->set_attribute( 'maxLength', 200 )
-                                              ->set_help_text( 'Max 200 characters' ),
+								               ->set_attribute( 'placeholder', '"Voucher or cash prize worth {AMOUNT}EUR to the participant/team and one free {CONFERENCE NAME AND YEAR} conference registration"' )
+								               ->set_attribute( 'maxLength', 200 )
+								               ->set_help_text( 'Max 200 characters' ),
 								          Field::make( 'text', 'amount', 'Prize amount' )
-									          ->set_attribute( 'maxLength', 6 )
-									          ->set_help_text( 'Prize amount in EUR. Max 6 characters' ),
+								               ->set_attribute( 'maxLength', 6 )
+								               ->set_help_text( 'Prize amount in EUR. Max 6 characters' ),
 							          ) ),
 
 							     Field::make( 'complex', 'competition_awards', 'Awards' )
@@ -437,14 +455,7 @@ class Plugin {
 								               ) ),
 								          Field::make( 'date', 'competition_start_date', 'Leaderboard Start Date' ),
 								          Field::make( 'date', 'competition_end_date', 'Leaderboard End Date' ),
-								          Field::make( 'text', 'competition_google_label', 'Analytics Event Label' )
-								               ->set_conditional_logic( array(
-									               array(
-										               'field'   => 'competition_stats_type',
-										               'value'   => 'analytics',
-										               'compare' => '=',
-									               )
-								               ) ),
+
 								          /*Field::make( 'text', 'competition_score_decimals', 'Score decimals' )
 											   ->set_attribute( 'type', 'number' )*/
 								          Field::make( 'select', 'competition_score_sort', 'Leaderboard Score Sorting' )
@@ -830,27 +841,6 @@ class Plugin {
 			<?php
 		}
 	}
-
-	public function change_upload_dir( $dirs ) {
-
-		$postfix = '';
-		if ( $this->competition != '' ) {
-			$postfix = '/' . $this->competition;
-		}
-
-		$dir = '/iarai-submissions';
-
-		if ( defined( 'COMPETITION_DIR' ) && ! empty( COMPETITION_DIR ) ) {
-			$dir = COMPETITION_DIR;
-		}
-
-		$dirs['subdir'] = $dir . $postfix;
-		$dirs['path']   = $dirs['basedir'] . $dir . $postfix;
-		$dirs['url']    = $dirs['baseurl'] . $dir . $postfix;
-
-		return $dirs;
-	}
-
 
 	static function get_log_content( $id ) {
 		$file_path = get_post_meta( $id, '_submission_file_path', true );
