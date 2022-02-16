@@ -8,6 +8,12 @@ use IARAI\Logging;
 
 class Plugin {
 
+	/**
+	 * @var array
+	 */
+	public static $timeline_types = [
+		'type1' => 'Type1'
+	];
 
 	public function __construct() {
 
@@ -77,6 +83,21 @@ class Plugin {
 
 	public function api_get_main_competition() {
 
+		$data = [];
+
+		$sections = [
+			'home',
+			'events',
+			'challenge',
+			'connect'
+		];
+
+		if ( ! isset( $_GET['page'] ) || ! in_array( $_GET['page'], $sections, true ) ) {
+			return new \WP_REST_Response( [ 'error' => 'Nothing here' ], 404 );
+		}
+
+		$page = sanitize_text_field( $_GET['page'] );
+
 		$terms = get_terms( array(
 			'taxonomy'   => 'competition',
 			'hide_empty' => false,
@@ -85,55 +106,58 @@ class Plugin {
 		) );
 
 		if ( empty( $terms ) ) {
-			return [];
+			return new \WP_REST_Response( [ 'error' => 'Nothing here' ], 404 );
 		}
 
 		$competition = $terms[0];
-		$data        = [];
 
-
-		$main_fields = [
-			'competition_main_long_name',
-			'competition_logo',
-			'competition_main_bg_image',
-			'competition_main_short_description',
-			'competition_main_image',
-			'competition_bullets',
-			'competition_main_video',
-			'competition_long_description',
-			'competition_secondary_image',
-			'competition_data_description',
-			'competition_data_image',
-			'competition_data_link',
-			'competition_data_github',
-			'competition_challenges',
+		$db_fields = [
+			'home'      => [
+				'competition_main_long_name',
+				'competition_logo',
+				'competition_main_bg_image',
+				'competition_main_short_description',
+				'competition_main_image',
+				'competition_bullets',
+				'competition_main_video',
+				'competition_long_description',
+				'competition_secondary_image',
+				'competition_data_description',
+				'competition_data_image',
+				'competition_data_link',
+				'competition_data_github',
+				'competition_challenges',
+			],
+			'connect'   => [
+				'competition_connect_forum',
+				'competition_connect_github',
+				'competition_connect_scientific_committee',
+				'competition_connect_organising_committee',
+				'competition_connect_contact',
+				'competition_connect_address',
+			],
+			'challenge' => 'competition_challenges',
+			'events'    => [],
 		];
 
-		$data['main'] = [];
+		if ( ! empty( $db_fields[ $page ] ) ) {
 
-		foreach ( $main_fields as $field ) {
-			$data['main'][ $field ] = carbon_get_term_meta( $competition->term_id, $field );
+			if ( is_array( $db_fields[ $page ] ) ) {
+				foreach ( $db_fields[ $page ] as $field ) {
+					$data[ $field ] = carbon_get_term_meta( $competition->term_id, $field );
+				}
+			} else {
+				$data[ $db_fields[ $page ] ] = carbon_get_term_meta( $competition->term_id, $db_fields[ $page ] );
+			}
 		}
 
-		$data['challenge'] = carbon_get_term_meta( $competition->term_id, 'competition_challenges' );
-
-		$connect_fields = [
-			'competition_connect_forum',
-			'competition_connect_github',
-			'competition_connect_scientific_committee',
-			'competition_connect_organising_committee',
-			'competition_connect_contact',
-			'competition_connect_address',
-		];
-        $data['connect']   = [];
-
-		foreach ( $connect_fields as $field ) {
-			$data['connect'][ $field ] = carbon_get_term_meta( $competition->term_id, $field );
+		if ( $page === 'challenge' ) {
+			$data['generalData'] = [
+				'timelineOptions' => self::$timeline_types
+			];
 		}
 
-		$data['events']    = [];
-
-		return $data;
+		return new \WP_REST_Response( $data, 200 );
 	}
 
 	public function plugins_loaded() {
@@ -257,7 +281,7 @@ class Plugin {
 
 						Field::make( 'text', 'competition_data_link', 'Get Data URL' )
 						     ->set_attribute( 'type', 'url' )
-							->set_attribute( 'placeholder', 'https://' ),
+						     ->set_attribute( 'placeholder', 'https://' ),
 						Field::make( 'text', 'competition_data_github', 'Github/Gitlab URL' )
 						     ->set_attribute( 'type', 'url' )
 						     ->set_attribute( 'placeholder', 'https://' ),
@@ -292,34 +316,37 @@ class Plugin {
 							          ) )
 							          ->set_layout( 'tabbed-horizontal' )
 							          ->set_min( 1 )
-							          ->set_max( 6 )
 							          ->add_fields( array(
-								          Field::make( 'text', 'name', 'Timeline name' )
-								               ->set_attribute( 'placeholder', 'Eq.: Submission to leaderboard.' )
-								               ->set_attribute( 'maxLength', 100 )
-								               ->set_help_text( 'Max 100 characters' ),
+								          Field::make( 'select', 'name', 'Timeline name' )
+								               ->add_options( self::$timeline_types ),
 								          Field::make( 'date', 'date', 'Date' ),
 							          ) )
-							          ->set_help_text( 'Max 6 entries' )
-							          ->set_required( true ),
+							          ->set_required( true )
+							          ->set_header_template( ' <%- date ? date : ($_index+1) %>' ),
 
 							     Field::make( 'complex', 'prizes', 'Prizes' )
-								     ->setup_labels( array(
-									     'plural_name'   => 'Prizes',
-									     'singular_name' => 'Prize',
-								     ) )
+							          ->setup_labels( array(
+								          'plural_name'   => 'Prizes',
+								          'singular_name' => 'Prize',
+							          ) )
 							          ->set_layout( 'tabbed-horizontal' )
 							          ->set_min( 1 )
 							          ->set_max( 3 )
 							          ->add_fields( array(
-								          Field::make( 'text', 'prize', 'Prize' ),
+								          Field::make( 'textarea', 'prize', 'Prize' )
+									          ->set_attribute( 'placeholder', '"Voucher or cash prize worth {AMOUNT}EUR to the participant/team and one free {CONFERENCE NAME AND YEAR} conference registration"' )
+									          ->set_attribute( 'maxLength', 200 )
+                                              ->set_help_text( 'Max 200 characters' ),
+								          Field::make( 'text', 'amount', 'Prize amount' )
+									          ->set_attribute( 'maxLength', 6 )
+									          ->set_help_text( 'Prize amount in EUR. Max 6 characters' ),
 							          ) ),
 
 							     Field::make( 'complex', 'competition_awards', 'Awards' )
-								     ->setup_labels( array(
-									     'plural_name'   => 'Awards',
-									     'singular_name' => 'Award',
-								     ) )
+							          ->setup_labels( array(
+								          'plural_name'   => 'Awards',
+								          'singular_name' => 'Award',
+							          ) )
 							          ->set_layout( 'tabbed-horizontal' )
 							          ->set_min( 1 )
 							          ->set_max( 3 )
@@ -331,10 +358,10 @@ class Plugin {
 							          ) )
 							          ->set_header_template( ' <%- team_name ? team_name : ($_index+1) %>' ),
 							     Field::make( 'complex', 'competition_special_prizes', 'Special Prizes' )
-								     ->setup_labels( array(
-									     'plural_name'   => 'Special Prizes',
-									     'singular_name' => 'Special Prize',
-								     ) )
+							          ->setup_labels( array(
+								          'plural_name'   => 'Special Prizes',
+								          'singular_name' => 'Special Prize',
+							          ) )
 							          ->set_layout( 'tabbed-horizontal' )
 							          ->set_min( 1 )
 							          ->set_max( 3 )
@@ -354,17 +381,17 @@ class Plugin {
 							          ) ),
 
 							     Field::make( 'complex', 'competition_leaderboards', 'Leaderboards' )
-								     ->set_conditional_logic( array(
-									     array(
-										     'field'   => 'competition_enable_leaderboards',
-										     'value'   => 'no',
-										     'compare' => '!=',
-									     )
-								     ) )
-								     ->setup_labels( array(
-									     'plural_name'   => 'Leaderboards',
-									     'singular_name' => 'Leaderboard',
-								     ) )
+							          ->set_conditional_logic( array(
+								          array(
+									          'field'   => 'competition_enable_leaderboards',
+									          'value'   => 'no',
+									          'compare' => '!=',
+								          )
+							          ) )
+							          ->setup_labels( array(
+								          'plural_name'   => 'Leaderboards',
+								          'singular_name' => 'Leaderboard',
+							          ) )
 							          ->set_layout( 'tabbed-horizontal' )
 							          ->set_min( 1 )
 							          ->add_fields( array(
@@ -408,8 +435,8 @@ class Plugin {
 										               'compare' => '!=',
 									               )
 								               ) ),
-								          Field::make( 'date', 'competition_start_date', 'Competition Start Date' ),
-								          Field::make( 'date', 'competition_end_date', 'Competition End Date' ),
+								          Field::make( 'date', 'competition_start_date', 'Leaderboard Start Date' ),
+								          Field::make( 'date', 'competition_end_date', 'Leaderboard End Date' ),
 								          Field::make( 'text', 'competition_google_label', 'Analytics Event Label' )
 								               ->set_conditional_logic( array(
 									               array(
@@ -433,7 +460,7 @@ class Plugin {
 									               '30' => '30 minutes'
 								               ] ),
 							          ) )
-								     ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
+							          ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
 
 						     ) )
 						     ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
@@ -724,6 +751,33 @@ class Plugin {
 		);
 
 		register_taxonomy( 'challenge', array( 'submission' ), $args );
+
+		$labels = array(
+			'name'              => _x( 'Leaderboard', 'taxonomy general name', 'textdomain' ),
+			'singular_name'     => _x( 'Leaderboard', 'taxonomy singular name', 'textdomain' ),
+			'search_items'      => __( 'Search Leaderboards', 'textdomain' ),
+			'all_items'         => __( 'All Leaderboards', 'textdomain' ),
+			'parent_item'       => __( 'Parent Leaderboard', 'textdomain' ),
+			'parent_item_colon' => __( 'Parent Leaderboard', 'textdomain' ),
+			'edit_item'         => __( 'Edit Leaderboard', 'textdomain' ),
+			'update_item'       => __( 'Update Leaderboard', 'textdomain' ),
+			'add_new_item'      => __( 'Add New Leaderboard', 'textdomain' ),
+			'new_item_name'     => __( 'New Leaderboard', 'textdomain' ),
+			'menu_name'         => __( 'Leaderboards', 'textdomain' ),
+		);
+
+		$args = array(
+			'hierarchical'      => false,
+			'labels'            => $labels,
+			'show_ui'           => false,
+			'show_admin_column' => true,
+			'query_var'         => false,
+			'show_in_rest'      => false,
+			'public'            => false,
+			'rewrite'           => false,
+		);
+
+		register_taxonomy( 'leaderboard', array( 'submission' ), $args );
 	}
 
 	/**

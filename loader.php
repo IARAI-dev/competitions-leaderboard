@@ -2,14 +2,14 @@
 /*
 Plugin Name: Competitions & Leaderboard
 Description: Add competitions, submissions and leaderboard
-Version: 1.0.0
+Version: 2.0.0
 Text Domain: competitions-leaderboard
 */
 
 // Define Constants
 
 if ( ! defined( 'CLEAD_VERSION' ) ) {
-	define( 'CLEAD_VERSION', '1.0.0' );
+	define( 'CLEAD_VERSION', '2.0.0' );
 }
 
 // Plugin Folder Path
