@@ -14,6 +14,8 @@ class Submissions {
 	private $filename = null;
 
 	private $competition = '';
+	private $challenge = '';
+	private $leaderboard = '';
 
 	public function __construct() {
 
@@ -189,6 +191,11 @@ class Submissions {
 			$pid = wp_insert_post( $new_post );
 
 			$this->competition = $competition;
+
+			if ( isset( $challenge, $leaderboard ) ) {
+				$this->challenge   = $challenge;
+				$this->leaderboard = $leaderboard;
+			}
 
 			// Actually try to upload the file
 			add_filter( 'upload_dir', [ $this, 'change_upload_dir' ] );
@@ -506,6 +513,9 @@ class Submissions {
 		$postfix = '';
 		if ( $this->competition != '' ) {
 			$postfix = '/' . $this->competition;
+			if ( ! empty( $this->challenge ) && ! empty( $this->leaderboard ) ) {
+				$postfix .= '/' . $this->challenge . '/' . $this->leaderboard;
+			}
 		}
 
 		$dir = '/iarai-submissions';
