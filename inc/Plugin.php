@@ -12,7 +12,11 @@ class Plugin {
 	 * @var array
 	 */
 	public static $timeline_types = [
-		'type1' => 'Type1'
+		'type1' => 'Type1',
+		'type2' => 'Type2',
+		'type3' => 'Type3',
+		'type4' => 'Type4',
+		'custom' => 'Custom',
 	];
 
 	public function __construct() {
@@ -234,8 +238,8 @@ class Plugin {
 					__( 'Main page' ),
 					array(
 
-						Field::make( 'checkbox', 'competition_is_main', 'Main competition' )
-						     ->set_help_text( 'Is this the current main competition?' ),
+						Field::make( 'checkbox', 'competition_is_main', 'Current competition' )
+						     ->set_help_text( 'Is this the current competition?' ),
 
 						Field::make( 'text', 'competition_main_long_name', 'Competition long name' )
 						     ->set_attribute( 'placeholder', 'Traffic Map Movie Forecasting 2021' )
@@ -255,9 +259,6 @@ class Plugin {
 						     ->set_help_text( 'Max 1500 characters' )
 						     ->set_required( true ),
 
-						Field::make( 'image', 'competition_main_image', 'Main image' )
-						     ->set_value_type( 'url' ),
-
 						Field::make( 'complex', 'competition_bullets', 'Bullet points' )
 						     ->setup_labels( array(
 							     'plural_name'   => 'Bullet Points',
@@ -274,6 +275,10 @@ class Plugin {
 						     ) )
 						     ->set_help_text( 'Max 5 entries' )
 						     ->set_required( true ),
+
+
+						Field::make( 'image', 'competition_main_image', 'Main image' )
+						     ->set_value_type( 'url' ),
 
 						Field::make( 'text', 'competition_main_video', 'Youtube Video Link ' ),
 
@@ -327,7 +332,7 @@ class Plugin {
 							          ->set_help_text( 'Max 80 characters' )
 							          ->set_required( true ),
 
-							     Field::make( 'complex', 'competition_timeline', 'Timeline' )
+							     Field::make( 'complex', 'timeline', 'Timeline' )
 							          ->setup_labels( array(
 								          'plural_name'   => 'Timeline',
 								          'singular_name' => 'Timeline',
@@ -352,15 +357,33 @@ class Plugin {
 							          ->set_max( 3 )
 							          ->add_fields( array(
 								          Field::make( 'textarea', 'prize', 'Prize' )
-								               ->set_attribute( 'placeholder', '"Voucher or cash prize worth {AMOUNT}EUR to the participant/team and one free {CONFERENCE NAME AND YEAR} conference registration"' )
+								               ->set_default_value('Voucher or cash prize worth {AMOUNT}EUR to the participant/team and one free {CONFERENCE NAME AND YEAR} conference registration' )
 								               ->set_attribute( 'maxLength', 200 )
 								               ->set_help_text( 'Max 200 characters' ),
 								          Field::make( 'text', 'amount', 'Prize amount' )
 								               ->set_attribute( 'maxLength', 6 )
 								               ->set_help_text( 'Prize amount in EUR. Max 6 characters' ),
+								          Field::make( 'text', 'conference_name', 'Conference name' ),
+								          Field::make( 'text', 'conference_year', 'Conference year' ),
+
 							          ) ),
 
-							     Field::make( 'complex', 'competition_awards', 'Awards' )
+							     Field::make( 'complex', 'special_prizes', 'Special Prizes' )
+							          ->setup_labels( array(
+								          'plural_name'   => 'Special Prizes',
+								          'singular_name' => 'Special Prize',
+							          ) )
+							          ->set_layout( 'tabbed-horizontal' )
+							          ->set_min( 1 )
+							          ->set_max( 3 )
+							          ->add_fields( array(
+								          Field::make( 'textarea', 'prize', 'Prize' )
+								               ->set_attribute( 'maxLength', 200 )
+								               ->set_help_text( 'Max 200 characters' ),
+							          ) ),
+
+                                 // special prizes. 1 text field
+							     Field::make( 'complex', 'awards', 'Awards' )
 							          ->setup_labels( array(
 								          'plural_name'   => 'Awards',
 								          'singular_name' => 'Award',
@@ -375,7 +398,8 @@ class Plugin {
 								          Field::make( 'text', 'award', 'Award' ),
 							          ) )
 							          ->set_header_template( ' <%- team_name ? team_name : ($_index+1) %>' ),
-							     Field::make( 'complex', 'competition_special_prizes', 'Special Prizes' )
+
+                                 Field::make( 'complex', 'special_prizes_awards', 'Special Prizes Awards' )
 							          ->setup_labels( array(
 								          'plural_name'   => 'Special Prizes',
 								          'singular_name' => 'Special Prize',
@@ -391,7 +415,7 @@ class Plugin {
 							          ) )
 							          ->set_header_template( ' <%- team_name ? team_name : ($_index+1) %>' ),
 
-							     Field::make( 'select', 'competition_enable_leaderboards', 'Enable Leaderboard' )
+							     Field::make( 'select', 'enable_leaderboards', 'Enable Leaderboard' )
 							          ->add_options( array(
 								          'yes'    => 'Yes',
 								          'editor' => 'Just for site Editors and Admins',
@@ -401,7 +425,7 @@ class Plugin {
 							     Field::make( 'complex', 'competition_leaderboards', 'Leaderboards' )
 							          ->set_conditional_logic( array(
 								          array(
-									          'field'   => 'competition_enable_leaderboards',
+									          'field'   => 'enable_leaderboards',
 									          'value'   => 'no',
 									          'compare' => '!=',
 								          )
@@ -413,7 +437,22 @@ class Plugin {
 							          ->set_layout( 'tabbed-horizontal' )
 							          ->set_min( 1 )
 							          ->add_fields( array(
+
 								          Field::make( 'text', 'name', 'Name' ),
+
+								          Field::make( 'complex', 'data', 'Data' )
+								               ->setup_labels( array(
+									               'plural_name'   => 'Data',
+									               'singular_name' => 'Data',
+								               ) )
+								               ->set_layout( 'tabbed-horizontal' )
+								               ->add_fields( array(
+									               Field::make( 'text', 'name', 'Name' ),
+									               Field::make( 'text', 'link', 'Link' )
+										               ->set_attribute( 'placeholder', 'https://' ),
+
+								               ) )
+								               ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
 
 								          Field::make( 'select', 'enable_submissions', 'Enable Submissions' )
 								               ->add_options( array(
