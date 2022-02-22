@@ -1,0 +1,4 @@
+[submodule "lib/react-competitions"]
+	path = lib/react-competitions
+	url = git@github.com:IARAI-dev/competitions.git
+	branch = main

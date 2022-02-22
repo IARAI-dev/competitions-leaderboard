@@ -115,13 +115,20 @@ class Plugin {
 
 		$competition = $terms[0];
 
+		$is_public = carbon_get_term_meta( $competition->term_id, 'competition_is_public' );
+
+      //  if (! $is_public) {
+
+       // }
+
 		if ( $page === 'events' ) {
 			$events = [];
 
 			$cat = ! empty(carbon_get_term_meta( $competition->term_id, 'competition_indico_category')) ? carbon_get_term_meta( $competition->term_id, 'competition_indico_category') : 0;
 
 			$data = wp_remote_retrieve_body(
-				wp_remote_get( "https://indico.iarai.ac.at/export/categ/$cat.json?occ=yes" )
+				wp_remote_get( "https://indico.iarai.ac.at/export/categ/$cat.json" )
+                //?occ=yes
 			);
             $data = json_decode( $data, true );
 
@@ -265,9 +272,11 @@ class Plugin {
 				->add_tab(
 					__( 'Main page' ),
 					array(
-
 						Field::make( 'checkbox', 'competition_is_main', 'Current competition' )
 						     ->set_help_text( 'Is this the current competition?' ),
+
+						Field::make( 'checkbox', 'competition_is_public', 'Public/Private' )
+						     ->set_help_text( 'Is the competition available to the public or just for logged in users' ),
 
 						Field::make( 'text', 'competition_main_long_name', 'Competition long name' )
 						     ->set_attribute( 'placeholder', 'Traffic Map Movie Forecasting 2021' )
@@ -312,7 +321,7 @@ class Plugin {
 
 					) )
 				->add_tab(
-					__( 'Data' ),
+					__( 'Competition' ),
 					array(
 						Field::make( 'textarea', 'competition_long_description', 'Long description' )
 						     ->set_attribute( 'maxLength', 2500 )
