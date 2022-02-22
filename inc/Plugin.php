@@ -79,8 +79,11 @@ class Plugin {
 
 		add_action( 'rest_api_init', function () {
 			register_rest_route( 'competition/v1', '/main', array(
-				'methods'  => 'GET',
-				'callback' => [ $this, 'api_get_main_competition' ],
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'api_get_main_competition' ],
+				'permission_callback' => function () {
+					return true;
+				}
 			) );
 		} );
 	}
@@ -117,30 +120,32 @@ class Plugin {
 
 		$is_public = carbon_get_term_meta( $competition->term_id, 'competition_is_public' );
 
-      //  if (! $is_public) {
-
-       // }
+        // private competition
+		if ( ! $is_public && ! is_user_logged_in() ) {
+			return new \WP_REST_Response( [ 'error' => 'Forbidden' ], 401 );
+		}
 
 		if ( $page === 'events' ) {
 			$events = [];
 
-			$cat = ! empty(carbon_get_term_meta( $competition->term_id, 'competition_indico_category')) ? carbon_get_term_meta( $competition->term_id, 'competition_indico_category') : 0;
+			$cat = ! empty( carbon_get_term_meta( $competition->term_id, 'competition_indico_category' ) ) ? carbon_get_term_meta( $competition->term_id, 'competition_indico_category' ) : 0;
 
 			$data = wp_remote_retrieve_body(
 				wp_remote_get( "https://indico.iarai.ac.at/export/categ/$cat.json" )
-                //?occ=yes
+			//?occ=yes
 			);
-            $data = json_decode( $data, true );
+
+			$data = @json_decode( $data, true );
 
 			if ( ! empty( $data['results'] ) ) {
-				foreach ($data['results'] as $event ) {
+				foreach ( $data['results'] as $event ) {
 					$events[] = [
-						'title' => $event['title'],
+						'title'       => $event['title'],
 						'description' => $event['description'],
-						'startDate' => $event['startDate'],
-						'endDate' => $event['endDate'],
-						'location' => $event['location'],
-						'url' => $event['url'],
+						'startDate'   => $event['startDate'],
+						'endDate'     => $event['endDate'],
+						'location'    => $event['location'],
+						'url'         => $event['url'],
 					];
 				}
 			}
@@ -223,6 +228,7 @@ class Plugin {
 
 	public function init() {
 
+		add_shortcode( 'competitions_app', [ $this, 'competitions_app_shortcode' ] );
 		add_shortcode( 'iarai_submission_form', [ $this, 'shortcode_submission' ] );
 		add_shortcode( 'iarai_leaderboard', [ $this, 'shortcode_leaderboard' ] );
 	}
@@ -586,7 +592,7 @@ class Plugin {
 					__( 'Events' ),
 					array(
 						Field::make( 'text', 'competition_indico_category', 'Indico Events Category ID' )
-                    ->set_help_text('Enter the Category ID from Indico where we should get the events from'),
+						     ->set_help_text( 'Enter the Category ID from Indico where we should get the events from' ),
 
 					) )
 				->add_tab(
@@ -721,8 +727,17 @@ class Plugin {
 		}
 	}
 
-
 	public function enqueue_scripts() {
+
+		wp_register_style( 'competitions-react', CLEAD_URL . 'lib/react-competitions/build/static/main.css', array(), CLEAD_VERSION, 'all' );
+		wp_register_script( 'competitions-react', CLEAD_URL . 'lib/react-competitions/build/static/main.js', array(), CLEAD_VERSION, true );
+
+		wp_localize_script( 'competitions-react', 'wpApiSettings', array(
+			'apiRoot' => esc_url_raw( rest_url() ),
+			'appBase' => esc_url_raw( rtrim( get_blog_details()->path, '/\\' ) ),
+			'nonce'   => wp_create_nonce( 'wp_rest' )
+		) );
+
 		wp_register_script( 'iarai-submissions', CLEAD_URL . 'assets/js/submissions.js', [ 'jquery' ], false, true );
 
 		wp_localize_script( 'iarai-submissions', 'iaraiSubmissionsParams', array(
@@ -951,6 +966,18 @@ class Plugin {
 		return false;
 	}
 
+	public function competitions_app_shortcode( $atts = [] ) {
+		add_action(
+			'wp_footer',
+			function () {
+				wp_enqueue_script( 'competitions-react' );
+				wp_print_styles( array( 'competitions-react' ) );
+			}
+		);
+
+		return '<div id="competitions-wrap"></div>';
+
+	}
 
 	public function shortcode_submission( $atts = [] ) {
 		extract( shortcode_atts( array(
