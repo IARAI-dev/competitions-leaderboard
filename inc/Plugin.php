@@ -12,10 +12,10 @@ class Plugin {
 	 * @var array
 	 */
 	public static $timeline_types = [
-		'type1' => 'Type1',
-		'type2' => 'Type2',
-		'type3' => 'Type3',
-		'type4' => 'Type4',
+		'type1'  => 'Type1',
+		'type2'  => 'Type2',
+		'type3'  => 'Type3',
+		'type4'  => 'Type4',
 		'custom' => 'Custom',
 	];
 
@@ -115,22 +115,42 @@ class Plugin {
 
 		$competition = $terms[0];
 
+		if ( $page === 'events' ) {
+			$events = [];
+
+			$cat = ! empty(carbon_get_term_meta( $competition->term_id, 'competition_indico_category')) ? carbon_get_term_meta( $competition->term_id, 'competition_indico_category') : 0;
+
+			$data = wp_remote_retrieve_body(
+				wp_remote_get( "https://indico.iarai.ac.at/export/categ/$cat.json?occ=yes" )
+			);
+            $data = json_decode( $data, true );
+
+			if ( ! empty( $data['results'] ) ) {
+				foreach ($data['results'] as $event ) {
+					$events[] = [
+						'title' => $event['title'],
+						'description' => $event['description'],
+						'startDate' => $event['startDate'],
+						'endDate' => $event['endDate'],
+						'location' => $event['location'],
+						'url' => $event['url'],
+					];
+				}
+			}
+
+			return new \WP_REST_Response( $events, 200 );
+		}
+
+
 		$db_fields = [
 			'home'      => [
 				'competition_main_long_name',
 				'competition_logo',
 				'competition_main_bg_image',
 				'competition_main_short_description',
-				'competition_main_image',
 				'competition_bullets',
+				'competition_main_image',
 				'competition_main_video',
-				'competition_long_description',
-				'competition_secondary_image',
-				'competition_data_description',
-				'competition_data_image',
-				'competition_data_link',
-				'competition_data_github',
-				'competition_challenges',
 			],
 			'connect'   => [
 				'competition_connect_forum',
@@ -140,8 +160,15 @@ class Plugin {
 				'competition_connect_contact',
 				'competition_connect_address',
 			],
-			'challenge' => 'competition_challenges',
-			'events'    => [],
+			'challenge' => [
+				'competition_long_description',
+				'competition_secondary_image',
+				'competition_data_description',
+				'competition_data_image',
+				'competition_data_link',
+				'competition_data_github',
+				'competition_challenges',
+			],
 		];
 
 		if ( ! empty( $db_fields[ $page ] ) ) {
@@ -150,10 +177,11 @@ class Plugin {
 				foreach ( $db_fields[ $page ] as $field ) {
 					$data[ $field ] = carbon_get_term_meta( $competition->term_id, $field );
 				}
-			} else {
-				$data[ $db_fields[ $page ] ] = carbon_get_term_meta( $competition->term_id, $db_fields[ $page ] );
 			}
 		}
+
+		$data['competition_short_name'] = $competition->name;
+		$data['competition_id']         = $competition->term_id;
 
 		if ( $page === 'challenge' ) {
 			if ( ! empty( $data['competition_challenges'] ) ) {
@@ -329,7 +357,7 @@ class Plugin {
 
 							     Field::make( 'textarea', 'description', 'Challenge description' )
 							          ->set_attribute( 'maxLength', 1500 )
-							          ->set_help_text( 'Max 80 characters' )
+							          ->set_help_text( 'Max 1500 characters' )
 							          ->set_required( true ),
 
 							     Field::make( 'complex', 'timeline', 'Timeline' )
@@ -357,7 +385,7 @@ class Plugin {
 							          ->set_max( 3 )
 							          ->add_fields( array(
 								          Field::make( 'textarea', 'prize', 'Prize' )
-								               ->set_default_value('Voucher or cash prize worth {AMOUNT}EUR to the participant/team and one free {CONFERENCE NAME AND YEAR} conference registration' )
+								               ->set_default_value( 'Voucher or cash prize worth {AMOUNT}EUR to the participant/team and one free {CONFERENCE NAME AND YEAR} conference registration' )
 								               ->set_attribute( 'maxLength', 200 )
 								               ->set_help_text( 'Max 200 characters' ),
 								          Field::make( 'text', 'amount', 'Prize amount' )
@@ -382,7 +410,7 @@ class Plugin {
 								               ->set_help_text( 'Max 200 characters' ),
 							          ) ),
 
-                                 // special prizes. 1 text field
+							     // special prizes. 1 text field
 							     Field::make( 'complex', 'awards', 'Awards' )
 							          ->setup_labels( array(
 								          'plural_name'   => 'Awards',
@@ -399,7 +427,7 @@ class Plugin {
 							          ) )
 							          ->set_header_template( ' <%- team_name ? team_name : ($_index+1) %>' ),
 
-                                 Field::make( 'complex', 'special_prizes_awards', 'Special Prizes Awards' )
+							     Field::make( 'complex', 'special_prizes_awards', 'Special Prizes Awards' )
 							          ->setup_labels( array(
 								          'plural_name'   => 'Special Prizes',
 								          'singular_name' => 'Special Prize',
@@ -449,7 +477,7 @@ class Plugin {
 								               ->add_fields( array(
 									               Field::make( 'text', 'name', 'Name' ),
 									               Field::make( 'text', 'link', 'Link' )
-										               ->set_attribute( 'placeholder', 'https://' ),
+									                    ->set_attribute( 'placeholder', 'https://' ),
 
 								               ) )
 								               ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
@@ -544,6 +572,13 @@ class Plugin {
 						     ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
 						Field::make( 'text', 'competition_connect_contact', 'Contact email' ),
 						Field::make( 'text', 'competition_connect_address', 'Contact Address' ),
+					) )
+				->add_tab(
+					__( 'Events' ),
+					array(
+						Field::make( 'text', 'competition_indico_category', 'Indico Events Category ID' )
+                    ->set_help_text('Enter the Category ID from Indico where we should get the events from'),
+
 					) )
 				->add_tab(
 					__( 'Deprecated' ),
