@@ -11,13 +11,35 @@ class Plugin {
 	/**
 	 * @var array
 	 */
-	public static $timeline_types = [
-		'type1'  => 'Type1',
-		'type2'  => 'Type2',
-		'type3'  => 'Type3',
-		'type4'  => 'Type4',
-		'custom' => 'Custom',
-	];
+	public static $timeline_types = array(
+		'symposium'                       => '{CompetitionName} Symposium',
+		'event'                           => '{CompetitionName} {Event name}',
+		'special_session'                 => '{CompetitionName} Special Session',
+		'workshop'                        => '{CompetitionName} Workshop',
+		'conference_start_date'           => '{ConferenceName} conference start date',
+		'conference_end_date'             => '{ConferenceName} conference end date',
+		'abstract_code_deadline'          => 'Abstract and code submission deadline',
+		'abstract_deadline'               => 'Abstract submission deadline',
+		'announcement_winners'            => 'Announcement of the winners',
+		'code_submission'                 => 'Code submission deadline',
+		'competition_starts'              => 'Competition starts',
+		'competition_ends'                => 'Competition ends ',
+		'forums_open'                     => 'Forums open',
+		'leaderboard_opens'               => 'Leaderboard {LeaderboadName} opens',
+		'submission_leaderboard_deadline' => 'Submission to {LeaderboadName} leaderboard deadline',
+		'paper_reviews_start'             => 'Paper reviews start',
+		'dataset_available'               => '{DatasetName} available',
+	);
+
+	public static $timeline_has_custom_text = array(
+		'event',
+		'conference_start_date',
+		'conference_end_date',
+		'leaderboard_opens',
+		'submission_leaderboard_deadline',
+		'dataset_available',
+	);
+
 
 	public function __construct() {
 
@@ -25,137 +47,246 @@ class Plugin {
 		new Terms();
 		new Submissions();
 
-		add_action( 'init', [ $this, 'init' ] );
-		add_action( 'plugins_loaded', [ $this, 'plugins_loaded' ] );
+		add_action( 'init', array( $this, 'init' ) );
+		add_action( 'plugins_loaded', array( $this, 'plugins_loaded' ) );
 
-		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
-		add_action( 'wp_ajax_iarai_filter_leaderboard', [ $this, 'ajax_filter_leaderboard' ] );
-		add_action( 'wp_ajax_nopriv_iarai_filter_leaderboard', [ $this, 'ajax_filter_leaderboard' ] );
+		add_action(
+			'wp',
+			function() {
 
-		add_action( 'posts_where', function ( $where, $wp_query ) {
-			global $wpdb;
-			if ( $search_term = $wp_query->get( '_title_filter' ) ) {
-				$search_term           = $wpdb->esc_like( $search_term );
-				$search_term           = ' \'%' . $search_term . '%\'';
-				$title_filter_relation = ( strtoupper( $wp_query->get( '_title_filter_relation' ) ) === 'OR' ? 'OR' : 'AND' );
-				$where                 .= ' ' . $title_filter_relation . ' ' . $wpdb->posts . '.post_title LIKE ' . $search_term;
+				global $post;
+
+				if ( empty( $post ) ) {
+					return;
+				}
+
+				if ( ! is_multisite() ) {
+					return;
+				}
+
+				if ( has_shortcode( $post->post_content, 'competitions_app' ) ) {
+
+					//Remove existing header
+					remove_action( 'kleo_header', 'kleo_show_header' );
+
+					// Disable sticky header
+					add_filter(
+						'body_class',
+						function( $class ) {
+							if ( ( $key = array_search( 'kleo-navbar-fixed', $class ) ) !== false ) {
+								unset( $class[ $key ] );
+							}
+							return $class;
+						}
+					);
+
+					// Replace header with main site header
+					add_action(
+						'kleo_header',
+						function() {
+
+							// delete_transient( 'main_page_header' );
+							if ( $header = get_transient( 'main_page_header' ) ) {
+								echo $header;
+								return;
+							}
+
+							$request = wp_remote_get( network_site_url() );
+							$html    = wp_remote_retrieve_body( $request );
+							// preg_match('/<div id="header" class="header-color">(.*?)<\/div>/s', $html, $match);
+
+							$dom = new \DOMDocument();
+							libxml_use_internal_errors( true );
+
+							$dom->loadHTML( $html );
+
+							$xpath = new \DOMXPath( $dom );
+
+							$div = $xpath->query( '//*[@id="header"]' );
+
+							$div = $div->item( 0 );
+
+							set_transient( 'main_page_header', $dom->saveHTML( $div ), 60 * 60 );
+
+							echo $dom->saveHTML( $div );
+
+						}
+					);
+				}
 			}
+		);
 
-			return $where;
-		}, 10, 2 );
+		add_action( 'wp_ajax_iarai_filter_leaderboard', array( $this, 'ajax_filter_leaderboard' ) );
+		add_action( 'wp_ajax_nopriv_iarai_filter_leaderboard', array( $this, 'ajax_filter_leaderboard' ) );
 
+		add_action(
+			'posts_where',
+			function ( $where, $wp_query ) {
+				global $wpdb;
+				if ( $search_term = $wp_query->get( '_title_filter' ) ) {
+					$search_term           = $wpdb->esc_like( $search_term );
+					$search_term           = ' \'%' . $search_term . '%\'';
+					$title_filter_relation = ( strtoupper( $wp_query->get( '_title_filter_relation' ) ) === 'OR' ? 'OR' : 'AND' );
+					$where                .= ' ' . $title_filter_relation . ' ' . $wpdb->posts . '.post_title LIKE ' . $search_term;
+				}
+
+				return $where;
+			},
+			10,
+			2
+		);
 
 		// create submissions post type. Private, not public
 		// create taxonomy competitions. Private, not public
-		add_action( 'init', [ $this, 'register_post_types' ] );
+		add_action( 'init', array( $this, 'register_post_types' ) );
 
 		// remove the html filtering
 		remove_filter( 'pre_term_description', 'wp_filter_kses' );
 		remove_filter( 'term_description', 'wp_kses_data' );
 
 		// add wysiwyg description
-		add_action( 'admin_head', [ $this, 'remove_default_category_description' ] );
-		//add_action( 'competition_add_form_fields', [ $this, 'competition_display_meta' ] );
-		//add_action( 'competition_edit_form_fields', [ $this, 'competition_display_meta' ] );
+		add_action( 'admin_head', array( $this, 'remove_default_category_description' ) );
+		// add_action( 'competition_add_form_fields', [ $this, 'competition_display_meta' ] );
+		// add_action( 'competition_edit_form_fields', [ $this, 'competition_display_meta' ] );
 
 		/* Metabox */
-		add_action( 'add_meta_boxes', [ $this, 'register_meta_boxes' ] );
-		add_action( 'plugins_loaded', [ $this, 'register_custom_fields' ], 12 );
+		add_action( 'add_meta_boxes', array( $this, 'register_meta_boxes' ) );
+		add_action( 'plugins_loaded', array( $this, 'register_custom_fields' ), 12 );
 
-		add_filter( 'template_include', [ $this, 'research_display_type_template' ], 99 );
+		add_filter( 'template_include', array( $this, 'research_display_type_template' ), 99 );
 
 		// Export CSV
-		add_action( 'admin_init', [ $this, 'export_csv' ] );
+		add_action( 'admin_init', array( $this, 'export_csv' ) );
 
 		// Email custom column
-		add_filter( 'manage_edit-submission_columns', [ $this, 'custom_add_new_columns' ] );
-		add_action( 'manage_submission_posts_custom_column', [ $this, 'custom_manage_new_columns' ], 10, 2 );
+		add_filter( 'manage_edit-submission_columns', array( $this, 'custom_add_new_columns' ) );
+		add_action( 'manage_submission_posts_custom_column', array( $this, 'custom_manage_new_columns' ), 10, 2 );
 
 		// Show the taxonomy ID
-		add_filter( "manage_edit-competition_columns", [ $this, 'add_tax_col' ] );
-		add_filter( "manage_edit-competition_sortable_columns", [ $this, 'add_tax_col' ] );
-		add_filter( "manage_competition_custom_column", [ $this, 'show_tax_id' ], 10, 3 );
+		add_filter( 'manage_edit-competition_columns', array( $this, 'add_tax_col' ) );
+		add_filter( 'manage_edit-competition_sortable_columns', array( $this, 'add_tax_col' ) );
+		add_filter( 'manage_competition_custom_column', array( $this, 'show_tax_id' ), 10, 3 );
 
-		add_action( 'rest_api_init', function () {
-			register_rest_route( 'competition/v1', '/main', array(
-				'methods'             => 'GET',
-				'callback'            => [ $this, 'api_get_main_competition' ],
-				'permission_callback' => function () {
-					return true;
-				}
-			) );
-		} );
+		add_action(
+			'rest_api_init',
+			function () {
+				register_rest_route(
+					'competition/v1',
+					'/main',
+					array(
+						'methods'             => 'GET',
+						'callback'            => array( $this, 'api_get_main_competition' ),
+						'permission_callback' => function () {
+							return true;
+						},
+					)
+				);
+			}
+		);
+
+		// add_filter( 'generate_rewrite_rules', function ( $wp_rewrite ){
+		// $wp_rewrite->rules = array_merge(
+		// ['events/?$' => 'index.php?compage=events'],
+		// $wp_rewrite->rules
+		// );
+		// $wp_rewrite->rules = array_merge(
+		// ['challenge/?$' => 'index.php?compage=challenge'],
+		// $wp_rewrite->rules
+		// );
+		// $wp_rewrite->rules = array_merge(
+		// ['connect/?$' => 'index.php?compage=connect'],
+		// $wp_rewrite->rules
+		// );
+		// } );
+
+		// add_filter( 'query_vars', function( $query_vars ) {
+		// $query_vars[] = 'events';
+		// $query_vars[] = 'challenge';
+		// $query_vars[] = 'connect';
+		// return $query_vars;
+		// } );
+
+		// add_action( 'template_redirect', function() {
+		// $page = get_query_var( 'compage' );
+		// if ( $page ) {
+		// add_filter('the_content', function() {
+		// return do_shortcode['competitions_app'];
+		// });
+		// }
+		// } );
 	}
 
 	public function api_get_main_competition() {
 
-		$data = [];
+		$data = array();
 
-		$sections = [
+		$sections = array(
 			'home',
 			'events',
 			'challenge',
-			'connect'
-		];
+			'connect',
+		);
 
 		if ( ! isset( $_GET['page'] ) || ! in_array( $_GET['page'], $sections, true ) ) {
-			return new \WP_REST_Response( [ 'error' => 'Nothing here' ], 404 );
+			return new \WP_REST_Response( array( 'error' => 'Nothing here' ), 404 );
 		}
 
 		$page = sanitize_text_field( $_GET['page'] );
 
-		$terms = get_terms( array(
-			'taxonomy'   => 'competition',
-			'hide_empty' => false,
-			'meta_key'   => '_competition_is_main',
-			'meta_value' => 'yes'
-		) );
+		$terms = get_terms(
+			array(
+				'taxonomy'   => 'competition',
+				'hide_empty' => false,
+				'meta_key'   => '_competition_is_main',
+				'meta_value' => 'yes',
+			)
+		);
 
 		if ( empty( $terms ) ) {
-			return new \WP_REST_Response( [ 'error' => 'Nothing here' ], 404 );
+			return new \WP_REST_Response( array( 'error' => 'Nothing here' ), 404 );
 		}
 
 		$competition = $terms[0];
 
 		$is_public = carbon_get_term_meta( $competition->term_id, 'competition_is_public' );
 
-        // private competition
+		// private competition
 		if ( ! $is_public && ! is_user_logged_in() ) {
-			return new \WP_REST_Response( [ 'error' => 'Forbidden' ], 401 );
+			return new \WP_REST_Response( array( 'error' => 'Forbidden' ), 401 );
 		}
 
 		if ( $page === 'events' ) {
-			$events = [];
+			$events = array();
 
 			$cat = ! empty( carbon_get_term_meta( $competition->term_id, 'competition_indico_category' ) ) ? carbon_get_term_meta( $competition->term_id, 'competition_indico_category' ) : 0;
 
 			$data = wp_remote_retrieve_body(
 				wp_remote_get( "https://indico.iarai.ac.at/export/categ/$cat.json" )
-			//?occ=yes
+				// ?occ=yes
 			);
 
 			$data = @json_decode( $data, true );
 
 			if ( ! empty( $data['results'] ) ) {
 				foreach ( $data['results'] as $event ) {
-					$events[] = [
+					$events[] = array(
 						'title'       => $event['title'],
 						'description' => $event['description'],
 						'startDate'   => $event['startDate'],
 						'endDate'     => $event['endDate'],
 						'location'    => $event['location'],
 						'url'         => $event['url'],
-					];
+					);
 				}
 			}
 
 			return new \WP_REST_Response( $events, 200 );
 		}
 
-
-		$db_fields = [
-			'home'      => [
+		$db_fields = array(
+			'home'      => array(
 				'competition_main_long_name',
 				'competition_logo',
 				'competition_main_bg_image',
@@ -163,16 +294,16 @@ class Plugin {
 				'competition_bullets',
 				'competition_main_image',
 				'competition_main_video',
-			],
-			'connect'   => [
+			),
+			'connect'   => array(
 				'competition_connect_forum',
 				'competition_connect_github',
 				'competition_connect_scientific_committee',
 				'competition_connect_organising_committee',
 				'competition_connect_contact',
 				'competition_connect_address',
-			],
-			'challenge' => [
+			),
+			'challenge' => array(
 				'competition_long_description',
 				'competition_secondary_image',
 				'competition_data_description',
@@ -180,8 +311,8 @@ class Plugin {
 				'competition_data_link',
 				'competition_data_github',
 				'competition_challenges',
-			],
-		];
+			),
+		);
 
 		if ( ! empty( $db_fields[ $page ] ) ) {
 
@@ -197,12 +328,21 @@ class Plugin {
 
 		if ( $page === 'challenge' ) {
 			if ( ! empty( $data['competition_challenges'] ) ) {
+
 				foreach ( $data['competition_challenges'] as $k => $challenge ) {
+
 					$data['competition_challenges'][ $k ]['slug'] = sanitize_title_with_dashes( $challenge['name'] );
 
-					if ( ! empty( $challenge['competition_timeline'] ) ) {
-						foreach ( $challenge['competition_timeline'] as $j => $timeline ) {
-							$data['competition_challenges'][ $k ]['competition_timeline'][ $j ]['label'] = self::$timeline_types[ $timeline['name'] ];
+					if ( ! empty( $challenge['timeline'] ) ) {
+						foreach ( $challenge['timeline'] as $j => $timeline ) {
+
+							$label = self::$timeline_types[ $timeline['type'] ];
+
+							if ( in_array( $timeline['type'], self::$timeline_has_custom_text ) ) {
+								$label = preg_replace( '/{(?!CompetitionName).*}/i', $timeline['extra_name'], $label );
+								unset( $data['competition_challenges'][ $k ]['timeline'][ $j ]['extra_name'] );
+							}
+							$data['competition_challenges'][ $k ]['timeline'][ $j ]['label'] = $label;
 						}
 					}
 
@@ -214,9 +354,9 @@ class Plugin {
 				}
 			}
 
-			$data['generalData'] = [
-				'timelineOptions' => self::$timeline_types
-			];
+			$data['generalData'] = array(
+				'timelineOptions' => self::$timeline_types,
+			);
 		}
 
 		return new \WP_REST_Response( $data, 200 );
@@ -228,9 +368,9 @@ class Plugin {
 
 	public function init() {
 
-		add_shortcode( 'competitions_app', [ $this, 'competitions_app_shortcode' ] );
-		add_shortcode( 'iarai_submission_form', [ $this, 'shortcode_submission' ] );
-		add_shortcode( 'iarai_leaderboard', [ $this, 'shortcode_leaderboard' ] );
+		add_shortcode( 'competitions_app', array( $this, 'competitions_app_shortcode' ) );
+		add_shortcode( 'iarai_submission_form', array( $this, 'shortcode_submission' ) );
+		add_shortcode( 'iarai_leaderboard', array( $this, 'shortcode_leaderboard' ) );
 	}
 
 	public function add_tax_col( $new_columns ) {
@@ -246,19 +386,18 @@ class Plugin {
 	/**
 	 * Enable leaderboard option Y/N
 	 * Require file upload option Y/N
-	 *
 	 */
 	public function register_custom_fields() {
 
 		if ( class_exists( '\Carbon_Fields\Container' ) ) {
 
 			$log_tag_options = function () {
-				$data  = [ '' => '--Select tag--' ];
+				$data  = array( '' => '--Select tag--' );
 				$terms = get_terms(
-					[
+					array(
 						'taxonomy'   => 'wp_log_type',
 						'hide_empty' => false,
-					]
+					)
 				);
 				if ( $terms ) {
 					foreach ( $terms as $term ) {
@@ -269,332 +408,460 @@ class Plugin {
 				return $data;
 			};
 
-
 			$competition_fields =
 				Container::make( 'term_meta', __( 'Term Options', 'competitions-leaderboard' ) )
-				         ->where( 'term_taxonomy', '=', 'competition' );
+						 ->where( 'term_taxonomy', '=', 'competition' );
 
 			$competition_fields
 				->add_tab(
 					__( 'Main page' ),
 					array(
 						Field::make( 'checkbox', 'competition_is_main', 'Current competition' )
-						     ->set_help_text( 'Is this the current competition?' ),
+							 ->set_help_text( 'Is this the current competition?' ),
 
-						Field::make( 'checkbox', 'competition_is_public', 'Public/Private' )
-						     ->set_help_text( 'Is the competition available to the public or just for logged in users' ),
+						Field::make( 'checkbox', 'competition_is_public', 'Public competition' )
+							 ->set_help_text( 'Is the competition available to the public or just for logged in users' ),
 
 						Field::make( 'text', 'competition_main_long_name', 'Competition long name' )
-						     ->set_attribute( 'placeholder', 'Traffic Map Movie Forecasting 2021' )
-						     ->set_required( true ),
+							 ->set_attribute( 'placeholder', 'Traffic Map Movie Forecasting 2021' )
+							 ->set_required( true ),
 
 						Field::make( 'image', 'competition_logo', 'Competition Logo' )
-						     ->set_value_type( 'url' )
-						     ->set_width( 50 )
-						     ->set_required( true ),
+							 ->set_value_type( 'url' )
+							 ->set_width( 50 )
+							 ->set_required( true ),
 						Field::make( 'image', 'competition_main_bg_image', 'Background image' )
-						     ->set_value_type( 'url' )
-						     ->set_width( 50 )
-						     ->set_required( true ),
+							 ->set_value_type( 'url' )
+							 ->set_width( 50 )
+							 ->set_required( true ),
 
 						Field::make( 'textarea', 'competition_main_short_description', 'Short description' )
-						     ->set_attribute( 'maxLength', 1500 )
-						     ->set_help_text( 'Max 1500 characters' )
-						     ->set_required( true ),
+							 ->set_attribute( 'maxLength', 1500 )
+							 ->set_help_text( 'Max 1500 characters' )
+							 ->set_required( true ),
 
 						Field::make( 'complex', 'competition_bullets', 'Bullet points' )
-						     ->setup_labels( array(
-							     'plural_name'   => 'Bullet Points',
-							     'singular_name' => 'Bullet Point',
-						     ) )
-						     ->set_layout( 'tabbed-horizontal' )
-						     ->set_min( 1 )
-						     ->set_max( 5 )
-						     ->add_fields( array(
-							     Field::make( 'text', 'bullet', 'Bullet point' )
-							          ->set_attribute( 'placeholder', 'Study high-resolution multi-channel traffic movies of entire cities with road maps.' )
-							          ->set_attribute( 'maxLength', 120 )
-							          ->set_help_text( 'Max 120 characters' ),
-						     ) )
-						     ->set_help_text( 'Max 5 entries' )
-						     ->set_required( true ),
-
+							->setup_labels(
+								array(
+									'plural_name'   => 'Bullet Points',
+									'singular_name' => 'Bullet Point',
+								)
+							)
+							 ->set_layout( 'tabbed-horizontal' )
+							 ->set_min( 1 )
+							 ->set_max( 5 )
+							->add_fields(
+								array(
+									Field::make( 'text', 'bullet', 'Bullet point' )
+										 ->set_attribute( 'placeholder', 'Study high-resolution multi-channel traffic movies of entire cities with road maps.' )
+										 ->set_attribute( 'maxLength', 120 )
+										 ->set_help_text( 'Max 120 characters' ),
+								)
+							)
+							 ->set_help_text( 'Max 5 entries' )
+							 ->set_required( true ),
 
 						Field::make( 'image', 'competition_main_image', 'Main image' )
-						     ->set_value_type( 'url' ),
+							 ->set_value_type( 'url' ),
 
 						Field::make( 'text', 'competition_main_video', 'Youtube Video Link ' ),
 
-					) )
+					)
+				)
 				->add_tab(
 					__( 'Competition' ),
 					array(
 						Field::make( 'textarea', 'competition_long_description', 'Long description' )
-						     ->set_attribute( 'maxLength', 2500 )
-						     ->set_help_text( 'Max 2500 characters' )
-						     ->set_required( true ),
+							 ->set_attribute( 'maxLength', 2500 )
+							 ->set_help_text( 'Max 2500 characters' ),
 
 						Field::make( 'image', 'competition_secondary_image', 'Secondary image' )
-						     ->set_value_type( 'url' ),
+							 ->set_value_type( 'url' ),
 
 						Field::make( 'textarea', 'competition_data_description', 'Data description' )
-						     ->set_attribute( 'maxLength', 2500 )
-						     ->set_help_text( 'Max 2500 characters' )
-						     ->set_required( true ),
+							 ->set_attribute( 'maxLength', 2500 )
+							 ->set_help_text( 'Max 2500 characters' ),
 
 						Field::make( 'image', 'competition_data_image', 'Data image' )
-						     ->set_value_type( 'url' ),
+							 ->set_value_type( 'url' ),
 
-						Field::make( 'text', 'competition_data_link', 'Get Data URL' )
-						     ->set_attribute( 'type', 'url' )
-						     ->set_attribute( 'placeholder', 'https://' ),
 						Field::make( 'text', 'competition_data_github', 'Github/Gitlab URL' )
-						     ->set_attribute( 'type', 'url' )
-						     ->set_attribute( 'placeholder', 'https://' ),
+							 ->set_attribute( 'type', 'url' )
+							 ->set_attribute( 'placeholder', 'https://' ),
 
-					) )
+					)
+				)
 				->add_tab(
 					__( 'Challenges' ),
 					array(
 						Field::make( 'complex', 'competition_challenges', 'Challenges' )
-						     ->setup_labels( array(
-							     'plural_name'   => 'Challenges',
-							     'singular_name' => 'Challenge',
-						     ) )
-						     ->set_layout( 'tabbed-horizontal' )
-						     ->set_min( 1 )
-						     ->add_fields( array(
-							     Field::make( 'text', 'name', 'Challenge name' )
-							          ->set_attribute( 'maxLength', 80 )
-							          ->set_help_text( 'Max 80 characters' )
-							          ->set_attribute( 'placeholder', 'IEEE Big Data - Stage 1 (challenge 2 would be IEEE Big Data - Stage 2)' )
-							          ->set_required( true ),
+							->setup_labels(
+								array(
+									'plural_name'   => 'Challenges',
+									'singular_name' => 'Challenge',
+								)
+							)
+							 ->set_layout( 'tabbed-horizontal' )
+							 ->set_min( 1 )
+							->add_fields(
+								array(
+									Field::make( 'text', 'name', 'Challenge name' )
+										 ->set_attribute( 'maxLength', 80 )
+										 ->set_help_text( 'Max 80 characters' )
+										 ->set_attribute( 'placeholder', 'IEEE Big Data - Stage 1 (challenge 2 would be IEEE Big Data - Stage 2)' ),
 
-							     Field::make( 'textarea', 'description', 'Challenge description' )
-							          ->set_attribute( 'maxLength', 1500 )
-							          ->set_help_text( 'Max 1500 characters' )
-							          ->set_required( true ),
+									Field::make( 'textarea', 'description', 'Challenge description' )
+										 ->set_attribute( 'maxLength', 1500 )
+										 ->set_help_text( 'Max 1500 characters' ),
 
-							     Field::make( 'complex', 'timeline', 'Timeline' )
-							          ->setup_labels( array(
-								          'plural_name'   => 'Timeline',
-								          'singular_name' => 'Timeline',
-							          ) )
-							          ->set_layout( 'tabbed-horizontal' )
-							          ->set_min( 1 )
-							          ->add_fields( array(
-								          Field::make( 'select', 'name', 'Timeline name' )
-								               ->add_options( self::$timeline_types ),
-								          Field::make( 'date', 'date', 'Date' ),
-							          ) )
-							          ->set_required( true )
-							          ->set_header_template( ' <%- date ? date : ($_index+1) %>' ),
+									Field::make( 'complex', 'timeline', 'Timeline' )
+									->setup_labels(
+										array(
+											'plural_name' => 'Timeline',
+											'singular_name' => 'Timeline',
+										)
+									)
+									  ->set_layout( 'tabbed-horizontal' )
+									  ->set_min( 1 )
+									->add_fields(
+										array(
+											Field::make( 'select', 'type', 'Timeline type' )
+											  ->add_options( self::$timeline_types ),
+											Field::make( 'text', 'extra_name', 'Custom name' )
+											->set_help_text( 'Custom name to appear in the timeline name placeholder' )
+											->set_conditional_logic(
+												array(
+													array(
+														'field'   => 'type',
+														'value'   => self::$timeline_has_custom_text,
+														'compare' => 'IN',
+													),
+												)
+											),
+											Field::make( 'date_time', 'date', 'Date' )
+												->set_input_format( 'Y-m-d H:i', 'Y-m-d H:i' )
+												->set_picker_options(
+													array(
+														'time_24hr' => true,
+														'enableSeconds' => false,
+													)
+												),
+										)
+									)
+									  ->set_header_template( ' <%- date ? date : ($_index+1) %>' ),
 
-							     Field::make( 'complex', 'prizes', 'Prizes' )
-							          ->setup_labels( array(
-								          'plural_name'   => 'Prizes',
-								          'singular_name' => 'Prize',
-							          ) )
-							          ->set_layout( 'tabbed-horizontal' )
-							          ->set_min( 1 )
-							          ->set_max( 3 )
-							          ->add_fields( array(
-								          Field::make( 'textarea', 'prize', 'Prize' )
-								               ->set_default_value( 'Voucher or cash prize worth {AMOUNT}EUR to the participant/team and one free {CONFERENCE NAME AND YEAR} conference registration' )
-								               ->set_attribute( 'maxLength', 200 )
-								               ->set_help_text( 'Max 200 characters' ),
-								          Field::make( 'text', 'amount', 'Prize amount' )
-								               ->set_attribute( 'maxLength', 6 )
-								               ->set_help_text( 'Prize amount in EUR. Max 6 characters' ),
-								          Field::make( 'text', 'conference_name', 'Conference name' ),
-								          Field::make( 'text', 'conference_year', 'Conference year' ),
+									Field::make( 'complex', 'prizes', 'Prizes' )
+									->setup_labels(
+										array(
+											'plural_name' => 'Prizes',
+											'singular_name' => 'Prize',
+										)
+									)
+										->set_layout( 'tabbed-horizontal' )
+										->set_min( 1 )
+										->set_max( 3 )
+									->add_fields(
+										array(
+											Field::make( 'textarea', 'prize', 'Prize' )
+												 ->set_default_value( 'Voucher or cash prize worth {AMOUNT}EUR to the participant/team and one free {CONFERENCE NAME AND YEAR} conference registration' )
+												 ->set_attribute( 'maxLength', 200 )
+												 ->set_help_text( 'Max 200 characters' ),
+											Field::make( 'text', 'amount', 'Prize amount' )
+												 ->set_attribute( 'maxLength', 6 )
+												 ->set_default_value( '3000' )
+												 ->set_help_text( 'Prize amount in EUR. Max 6 characters' ),
+											Field::make( 'text', 'conference_name', 'Conference name' ),
+											Field::make( 'text', 'conference_year', 'Conference year' ),
 
-							          ) ),
+										)
+									),
 
-							     Field::make( 'complex', 'special_prizes', 'Special Prizes' )
-							          ->setup_labels( array(
-								          'plural_name'   => 'Special Prizes',
-								          'singular_name' => 'Special Prize',
-							          ) )
-							          ->set_layout( 'tabbed-horizontal' )
-							          ->set_min( 1 )
-							          ->set_max( 3 )
-							          ->add_fields( array(
-								          Field::make( 'textarea', 'prize', 'Prize' )
-								               ->set_attribute( 'maxLength', 200 )
-								               ->set_help_text( 'Max 200 characters' ),
-							          ) ),
+									Field::make( 'complex', 'special_prizes', 'Special Prizes' )
+									->setup_labels(
+										array(
+											'plural_name' => 'Special Prizes',
+											'singular_name' => 'Special Prize',
+										)
+									)
+										->set_layout( 'tabbed-horizontal' )
+										->set_min( 1 )
+										->set_max( 3 )
+									->add_fields(
+										array(
+											Field::make( 'textarea', 'prize', 'Prize' )
+												 ->set_attribute( 'maxLength', 200 )
+												 ->set_help_text( 'Max 200 characters' ),
+										)
+									),
 
-							     // special prizes. 1 text field
-							     Field::make( 'complex', 'awards', 'Awards' )
-							          ->setup_labels( array(
-								          'plural_name'   => 'Awards',
-								          'singular_name' => 'Award',
-							          ) )
-							          ->set_layout( 'tabbed-horizontal' )
-							          ->set_min( 1 )
-							          ->set_max( 3 )
-							          ->add_fields( array(
-								          Field::make( 'text', 'team_name', 'Team Name' ),
-								          Field::make( 'text', 'team_members', 'Team members' ),
-								          Field::make( 'text', 'affiliations', 'Affiliations' ),
-								          Field::make( 'text', 'award', 'Award' ),
-							          ) )
-							          ->set_header_template( ' <%- team_name ? team_name : ($_index+1) %>' ),
+									// special prizes. 1 text field
+									Field::make( 'complex', 'awards', 'Winners' )
+									->setup_labels(
+										array(
+											'plural_name' => 'Winners',
+											'singular_name' => 'Winner',
+										)
+									)
+										->set_layout( 'tabbed-horizontal' )
+										->set_min( 1 )
+										->set_max( 3 )
+									->add_fields(
+										array(
+											Field::make( 'text', 'team_name', 'Team Name' ),
+											Field::make( 'text', 'team_members', 'Team members' ),
+											Field::make( 'text', 'affiliations', 'Affiliations' ),
+											Field::make( 'text', 'award', 'Prize' ),
+										)
+									)
+										->set_header_template( ' <%- team_name ? team_name : ($_index+1) %>' ),
 
-							     Field::make( 'complex', 'special_prizes_awards', 'Special Prizes Awards' )
-							          ->setup_labels( array(
-								          'plural_name'   => 'Special Prizes',
-								          'singular_name' => 'Special Prize',
-							          ) )
-							          ->set_layout( 'tabbed-horizontal' )
-							          ->set_min( 1 )
-							          ->set_max( 3 )
-							          ->add_fields( array(
-								          Field::make( 'text', 'team_name', 'Team Name' ),
-								          Field::make( 'text', 'title', 'Title' ),
-								          Field::make( 'text', 'affiliations', 'Affiliations' ),
-								          Field::make( 'text', 'award', 'Award' ),
-							          ) )
-							          ->set_header_template( ' <%- team_name ? team_name : ($_index+1) %>' ),
+									Field::make( 'complex', 'special_prizes_awards', 'Special Prizes Winners' )
+									->setup_labels(
+										array(
+											'plural_name' => 'SP Winners',
+											'singular_name' => 'SP Winner',
+										)
+									)
+										->set_layout( 'tabbed-horizontal' )
+										->set_min( 1 )
+										->set_max( 3 )
+									->add_fields(
+										array(
+											Field::make( 'text', 'team_name', 'Team Name' ),
+											Field::make( 'text', 'title', 'Title' ),
+											Field::make( 'text', 'affiliations', 'Affiliations' ),
+											Field::make( 'text', 'award', 'Prize' ),
+										)
+									)
+										->set_header_template( ' <%- team_name ? team_name : ($_index+1) %>' ),
 
-							     Field::make( 'select', 'enable_leaderboards', 'Enable Leaderboard' )
-							          ->add_options( array(
-								          'yes'    => 'Yes',
-								          'editor' => 'Just for site Editors and Admins',
-								          'no'     => 'No',
-							          ) ),
+									Field::make( 'select', 'enable_leaderboards', 'Leaderboard Visibility' )
+									->add_options(
+										array(
+											'yes'    => 'Public',
+											'editor' => 'Just for site Editors and Admins',
+											'no'     => 'Closed',
+										)
+									),
+									Field::make( 'text', 'external_submission', 'Submission of other files' )
+										->set_help_text( 'Link to submit' ),
 
-							     Field::make( 'complex', 'competition_leaderboards', 'Leaderboards' )
-							          ->set_conditional_logic( array(
-								          array(
-									          'field'   => 'enable_leaderboards',
-									          'value'   => 'no',
-									          'compare' => '!=',
-								          )
-							          ) )
-							          ->setup_labels( array(
-								          'plural_name'   => 'Leaderboards',
-								          'singular_name' => 'Leaderboard',
-							          ) )
-							          ->set_layout( 'tabbed-horizontal' )
-							          ->set_min( 1 )
-							          ->add_fields( array(
+									Field::make( 'complex', 'competition_leaderboards', 'Leaderboards' )
+									->set_conditional_logic(
+										array(
+											array(
+												'field'   => 'enable_leaderboards',
+												'value'   => 'no',
+												'compare' => '!=',
+											),
+										)
+									)
+									->setup_labels(
+										array(
+											'plural_name' => 'Leaderboards',
+											'singular_name' => 'Leaderboard',
+										)
+									)
+										->set_layout( 'tabbed-horizontal' )
+										->set_min( 1 )
+									->add_fields(
+										array(
 
-								          Field::make( 'text', 'name', 'Name' ),
+											Field::make( 'text', 'name', 'Name' ),
 
-								          Field::make( 'complex', 'data', 'Data' )
-								               ->setup_labels( array(
-									               'plural_name'   => 'Data',
-									               'singular_name' => 'Data',
-								               ) )
-								               ->set_layout( 'tabbed-horizontal' )
-								               ->add_fields( array(
-									               Field::make( 'text', 'name', 'Name' ),
-									               Field::make( 'text', 'link', 'Link' )
-									                    ->set_attribute( 'placeholder', 'https://' ),
+											Field::make( 'complex', 'data', 'Data' )
+											->setup_labels(
+												array(
+													'plural_name'   => 'Data',
+													'singular_name' => 'Data',
+												)
+											)
+											   ->set_layout( 'tabbed-horizontal' )
+											->add_fields(
+												array(
+													Field::make( 'text', 'name', 'Name' ),
+													Field::make( 'text', 'link', 'Link' )
+														 ->set_attribute( 'placeholder', 'https://' ),
 
-								               ) )
-								               ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
+												)
+											)
+											   ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
 
-								          Field::make( 'select', 'enable_submissions', 'Enable Submissions' )
-								               ->add_options( array(
-									               'yes'    => 'Yes',
-									               'editor' => 'Just for site Editors and Admins',
-									               'guests' => 'Also for Guests',
-									               'no'     => 'No',
-								               ) ),
-								          Field::make( 'text', 'competition_limit_submit', 'Limit submissions number' )
-								               ->set_attribute( 'type', 'number' )
-								               ->set_conditional_logic( array(
-									               array(
-										               'field'   => 'enable_submissions',
-										               'value'   => 'no',
-										               'compare' => '!=',
-									               )
-								               ) ),
-								          Field::make( 'text', 'competition_file_types', 'Allow specific file types' )
-								               ->set_help_text( 'Comma separated allowed file extensions(Ex: jpg,png,gif,pdf)' )
-								               ->set_conditional_logic( array(
-									               array(
-										               'field'   => 'enable_submissions',
-										               'value'   => 'no',
-										               'compare' => '!=',
-									               )
-								               ) ),
-								          Field::make( 'select', 'enable_submission_deletion', 'Enable Submission Deletion' )
-								               ->add_options( array(
-									               'yes'    => 'Yes',
-									               'editor' => 'Just for site Editors and Admins',
-									               'no'     => 'No',
-								               ) )
-								               ->set_conditional_logic( array(
-									               array(
-										               'field'   => 'enable_submissions',
-										               'value'   => 'no',
-										               'compare' => '!=',
-									               )
-								               ) ),
-								          Field::make( 'date', 'competition_start_date', 'Leaderboard Start Date' ),
-								          Field::make( 'date', 'competition_end_date', 'Leaderboard End Date' ),
+											Field::make( 'select', 'enable_submissions', 'Enable Submissions' )
+											->add_options(
+												array(
+													'yes' => 'Yes',
+													'editor' => 'Just for site Editors and Admins',
+													'guests' => 'Also for Guests',
+													'no'  => 'No',
+												)
+											),
+											Field::make( 'text', 'competition_limit_submit', 'Limit submissions number' )
+												->set_attribute( 'type', 'number' )
+											->set_conditional_logic(
+												array(
+													array(
+														'field'   => 'enable_submissions',
+														'value'   => 'no',
+														'compare' => '!=',
+													),
+												)
+											),
+											Field::make( 'text', 'competition_file_types', 'Allow specific file types' )
+												->set_help_text( 'Comma separated allowed file extensions(Ex: jpg,png,gif,pdf)' )
+											->set_conditional_logic(
+												array(
+													array(
+														'field'   => 'enable_submissions',
+														'value'   => 'no',
+														'compare' => '!=',
+													),
+												)
+											),
+											Field::make( 'select', 'enable_submission_deletion', 'Enable Submission Deletion' )
+											->add_options(
+												array(
+													'yes' => 'Yes',
+													'editor' => 'Just for site Editors and Admins',
+													'no'  => 'No',
+												)
+											)
+											->set_conditional_logic(
+												array(
+													array(
+														'field'   => 'enable_submissions',
+														'value'   => 'no',
+														'compare' => '!=',
+													),
+												)
+											),
+											Field::make( 'date', 'competition_start_date', 'Leaderboard Start Date' )
+											->set_input_format( 'Y-m-d H:i', 'Y-m-d H:i' )
+												->set_picker_options(
+													array(
+														'time_24hr' => true,
+														'enableSeconds' => false,
+													)
+												),
+											Field::make( 'date', 'competition_end_date', 'Leaderboard End Date' )
+											->set_input_format( 'Y-m-d H:i', 'Y-m-d H:i' )
+												->set_picker_options(
+													array(
+														'time_24hr' => true,
+														'enableSeconds' => false,
+													)
+												),
 
-								          /*Field::make( 'text', 'competition_score_decimals', 'Score decimals' )
-											   ->set_attribute( 'type', 'number' )*/
-								          Field::make( 'select', 'competition_score_sort', 'Leaderboard Score Sorting' )
-								               ->add_options( array(
-									               'asc'  => 'Ascending',
-									               'desc' => 'Descending',
-									               'abs'  => 'Absolute Zero',
-								               ) ),
-								          Field::make( 'select', 'competition_cron_frequency', "Cron Frequency" )
-								               ->add_options( [
-									               '10' => '10 minutes',
-									               '20' => '20 minutes',
-									               '30' => '30 minutes'
-								               ] ),
-							          ) )
-							          ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
+											/*
+											Field::make( 'text', 'competition_score_decimals', 'Score decimals' )
+												->set_attribute( 'type', 'number' )*/
+											Field::make( 'select', 'competition_score_sort', 'Leaderboard Score Sorting' )
+											->add_options(
+												array(
+													'asc'  => 'Ascending',
+													'desc' => 'Descending',
+													'abs'  => 'Absolute Zero',
+												)
+											),
+											Field::make( 'select', 'competition_cron_frequency', 'Cron Frequency' )
+											->add_options(
+												array(
+													'10' => '10 minutes',
+													'20' => '20 minutes',
+													'30' => '30 minutes',
+												)
+											),
+										)
+									)
+										->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
 
-						     ) )
-						     ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
-					) )
+								)
+							)
+							 ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
+					)
+				)
 				->add_tab(
 					__( 'Connect' ),
 					array(
 						Field::make( 'text', 'competition_connect_forum', 'Forum link' ),
-						Field::make( 'text', 'competition_connect_github', 'Github link' ),
-						Field::make( 'complex', 'competition_connect_scientific_committee', 'Scientific Committee' )
-						     ->set_layout( 'tabbed-horizontal' )
-						     ->set_min( 1 )
-							//->set_max( 3 )
-							 ->add_fields( array(
-								Field::make( 'text', 'name', 'Name' ),
-								Field::make( 'image', 'image', 'Image' )
-								     ->set_value_type( 'url' ),
-								Field::make( 'text', 'description', 'Description' ),
-							) )
-						     ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
-						Field::make( 'complex', 'competition_connect_organising_committee', 'Organising Committee' )
-						     ->set_layout( 'tabbed-horizontal' )
-						     ->set_min( 1 )
-							//->set_max( 3 )
-							 ->add_fields( array(
-								Field::make( 'text', 'name', 'Name' ),
-								Field::make( 'image', 'image', 'Image' )
-								     ->set_value_type( 'url' ),
-								Field::make( 'text', 'description', 'Description' ),
-							) )
-						     ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
 						Field::make( 'text', 'competition_connect_contact', 'Contact email' ),
-						Field::make( 'text', 'competition_connect_address', 'Contact Address' ),
-					) )
+						Field::make( 'complex', 'competition_connect_scientific_committee', 'Scientific Committee' )
+							 ->set_layout( 'tabbed-horizontal' )
+							 ->set_min( 1 )
+							// ->set_max( 3 )
+							->add_fields(
+								array(
+									Field::make( 'select', 'title', 'Title' )
+									->add_options(
+										array(
+											''      => 'None',
+											'Dr'    => 'Dr',
+											'Prof.' => 'Prof.',
+											'MSc'   => 'MSc',
+											'PhD'   => 'PhD',
+
+										)
+									),
+									Field::make( 'select', 'role', 'Role in competition' )
+									->add_options(
+										array(
+											'member'   => 'Member',
+											'chair'    => 'Chair',
+											'co-chair' => 'Co-Chair',
+
+										)
+									),
+									Field::make( 'text', 'name', 'Name' ),
+									Field::make( 'image', 'image', 'Image' )
+											 ->set_value_type( 'url' ),
+									Field::make( 'text', 'affiliation', 'Affiliation & Country' ),
+									Field::make( 'textarea', 'description', 'Bio' ),
+								)
+							)
+							 ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
+						Field::make( 'complex', 'competition_connect_organising_committee', 'Organising Committee' )
+							 ->set_layout( 'tabbed-horizontal' )
+							 ->set_min( 1 )
+							// ->set_max( 3 )
+							->add_fields(
+								array(
+									Field::make( 'select', 'title', 'Title' )
+									->add_options(
+										array(
+											''      => 'None',
+											'Dr'    => 'Dr',
+											'Prof.' => 'Prof.',
+											'MSc'   => 'MSc',
+											'PhD'   => 'PhD',
+										)
+									),
+									Field::make( 'select', 'role', 'Role in competition' )
+									->add_options(
+										array(
+											'co-chair' => 'Team',
+											'chair'    => 'Core Organizer',
+										)
+									),
+									Field::make( 'text', 'affiliation', 'Affiliation' ),
+									Field::make( 'text', 'role_affiliation', 'Role at affiliation' ),
+									Field::make( 'text', 'name', 'Name' ),
+									Field::make( 'image', 'image', 'Image' )
+											 ->set_value_type( 'url' ),
+									Field::make( 'textarea', 'description', 'Bio' ),
+								)
+							)
+							 ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
+
+					)
+				)
 				->add_tab(
 					__( 'Events' ),
 					array(
 						Field::make( 'text', 'competition_indico_category', 'Indico Events Category ID' )
-						     ->set_help_text( 'Enter the Category ID from Indico where we should get the events from' ),
+							 ->set_help_text( 'Enter the Category ID from Indico where we should get the events from' ),
 
-					) )
+					)
+				)
 				->add_tab(
 					__( 'Deprecated' ),
 					array(
@@ -602,81 +869,103 @@ class Plugin {
 
 						Field::make( 'rich_text', 'competition_pre_text', 'Before Text(Deprecated)' ),
 						Field::make( 'select', 'competition_leaderboard', 'Enable Leaderboard' )
-						     ->add_options( array(
-							     'yes'    => 'Yes',
-							     'editor' => 'Just for site Editors and Admins',
-							     'no'     => 'No',
-						     ) ),
+							->add_options(
+								array(
+									'yes'    => 'Yes',
+									'editor' => 'Just for site Editors and Admins',
+									'no'     => 'No',
+								)
+							),
 						Field::make( 'select', 'enable_submissions', 'Enable Submissions' )
-						     ->add_options( array(
-							     'yes'    => 'Yes',
-							     'editor' => 'Just for site Editors and Admins',
-							     'guests' => 'Also for Guests',
-							     'no'     => 'No',
-						     ) ),
+							->add_options(
+								array(
+									'yes'    => 'Yes',
+									'editor' => 'Just for site Editors and Admins',
+									'guests' => 'Also for Guests',
+									'no'     => 'No',
+								)
+							),
 						Field::make( 'text', 'competition_limit_submit', 'Limit submissions number' )
-						     ->set_attribute( 'type', 'number' )
-						     ->set_conditional_logic( array(
-							     array(
-								     'field'   => 'enable_submissions',
-								     'value'   => 'no',
-								     'compare' => '!=',
-							     )
-						     ) ),
+							 ->set_attribute( 'type', 'number' )
+							->set_conditional_logic(
+								array(
+									array(
+										'field'   => 'enable_submissions',
+										'value'   => 'no',
+										'compare' => '!=',
+									),
+								)
+							),
 						Field::make( 'text', 'competition_file_types', 'Allow specific file types' )
-						     ->set_help_text( 'Comma separated allowed file extensions(Ex: jpg,png,gif,pdf)' )
-						     ->set_conditional_logic( array(
-							     array(
-								     'field'   => 'enable_submissions',
-								     'value'   => 'no',
-								     'compare' => '!=',
-							     )
-						     ) ),
+							 ->set_help_text( 'Comma separated allowed file extensions(Ex: jpg,png,gif,pdf)' )
+							->set_conditional_logic(
+								array(
+									array(
+										'field'   => 'enable_submissions',
+										'value'   => 'no',
+										'compare' => '!=',
+									),
+								)
+							),
 						Field::make( 'select', 'enable_submission_deletion', 'Enable Submission Deletion' )
-						     ->add_options( array(
-							     'yes'    => 'Yes',
-							     'editor' => 'Just for site Editors and Admins',
-							     'no'     => 'No',
-						     ) )
-						     ->set_conditional_logic( array(
-							     array(
-								     'field'   => 'enable_submissions',
-								     'value'   => 'no',
-								     'compare' => '!=',
-							     )
-						     ) ),
+							->add_options(
+								array(
+									'yes'    => 'Yes',
+									'editor' => 'Just for site Editors and Admins',
+									'no'     => 'No',
+								)
+							)
+							->set_conditional_logic(
+								array(
+									array(
+										'field'   => 'enable_submissions',
+										'value'   => 'no',
+										'compare' => '!=',
+									),
+								)
+							),
 						Field::make( 'date', 'competition_start_date', 'Competition Start Date' ),
 						Field::make( 'date', 'competition_end_date', 'Competition End Date' ),
 						Field::make( 'select', 'competition_log_tag' )
-						     ->add_options( $log_tag_options ),
+							 ->add_options( $log_tag_options ),
 						Field::make( 'select', 'competition_stats_type', 'Download Statistics Method' )
-						     ->add_options( array(
-							     'local'     => 'Local Log',
-							     'analytics' => 'Google Analytics',
-						     ) ),
+							->add_options(
+								array(
+									'local'     => 'Local Log',
+									'analytics' => 'Google Analytics',
+								)
+							),
 						Field::make( 'text', 'competition_google_label', 'Analytics Event Label' )
-						     ->set_conditional_logic( array(
-							     array(
-								     'field'   => 'competition_stats_type',
-								     'value'   => 'analytics',
-								     'compare' => '=',
-							     )
-						     ) ),
-						/*Field::make( 'text', 'competition_score_decimals', 'Score decimals' )
+							->set_conditional_logic(
+								array(
+									array(
+										'field'   => 'competition_stats_type',
+										'value'   => 'analytics',
+										'compare' => '=',
+									),
+								)
+							),
+						/*
+						Field::make( 'text', 'competition_score_decimals', 'Score decimals' )
 							 ->set_attribute( 'type', 'number' )*/
 						Field::make( 'select', 'competition_score_sort', 'Leaderboard Score Sorting' )
-						     ->add_options( array(
-							     'asc'  => 'Ascending',
-							     'desc' => 'Descending',
-							     'abs'  => 'Absolute Zero',
-						     ) ),
-						Field::make( 'select', 'competition_cron_frequency', "Cron Frequency" )
-						     ->add_options( [
-							     '10' => '10 minutes',
-							     '20' => '20 minutes',
-							     '30' => '30 minutes'
-						     ] ),
-					) );
+							->add_options(
+								array(
+									'asc'  => 'Ascending',
+									'desc' => 'Descending',
+									'abs'  => 'Absolute Zero',
+								)
+							),
+						Field::make( 'select', 'competition_cron_frequency', 'Cron Frequency' )
+							->add_options(
+								array(
+									'10' => '10 minutes',
+									'20' => '20 minutes',
+									'30' => '30 minutes',
+								)
+							),
+					)
+				);
 
 		}
 	}
@@ -687,7 +976,7 @@ class Plugin {
 		add_meta_box(
 			'submission_files_metabox',
 			__( 'Submission info', 'bbpress' ),
-			[ $this, 'file_info_metabox' ],
+			array( $this, 'file_info_metabox' ),
 			'submission',
 			'advanced',
 			'default'
@@ -732,18 +1021,26 @@ class Plugin {
 		wp_register_style( 'competitions-react', CLEAD_URL . 'lib/react-competitions/build/static/main.css', array(), CLEAD_VERSION, 'all' );
 		wp_register_script( 'competitions-react', CLEAD_URL . 'lib/react-competitions/build/static/main.js', array(), CLEAD_VERSION, true );
 
-		wp_localize_script( 'competitions-react', 'wpApiSettings', array(
-			'apiRoot' => esc_url_raw( rest_url() ),
-			'appBase' => esc_url_raw( rtrim( get_blog_details()->path, '/\\' ) ),
-			'nonce'   => wp_create_nonce( 'wp_rest' )
-		) );
+		wp_localize_script(
+			'competitions-react',
+			'wpApiSettings',
+			array(
+				'apiRoot' => esc_url_raw( rest_url() ),
+				'appBase' => esc_url_raw( rtrim( is_multisite() ? get_blog_details()->path : '', '/\\' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+			)
+		);
 
-		wp_register_script( 'iarai-submissions', CLEAD_URL . 'assets/js/submissions.js', [ 'jquery' ], false, true );
+		wp_register_script( 'iarai-submissions', CLEAD_URL . 'assets/js/submissions.js', array( 'jquery' ), false, true );
 
-		wp_localize_script( 'iarai-submissions', 'iaraiSubmissionsParams', array(
-			'ajaxurl'   => admin_url( 'admin-ajax.php' ),
-			'ajaxNonce' => wp_create_nonce( 'iarai-submissions-nonce' )
-		) );
+		wp_localize_script(
+			'iarai-submissions',
+			'iaraiSubmissionsParams',
+			array(
+				'ajaxurl'   => admin_url( 'admin-ajax.php' ),
+				'ajaxNonce' => wp_create_nonce( 'iarai-submissions-nonce' ),
+			)
+		);
 	}
 
 	public function register_post_types() {
@@ -761,7 +1058,7 @@ class Plugin {
 			'search_items'       => __( 'Search Submissions', 'competitions-leaderboard' ),
 			'parent_item_colon'  => __( 'Parent Submissions:', 'competitions-leaderboard' ),
 			'not_found'          => __( 'No submissions found.', 'competitions-leaderboard' ),
-			'not_found_in_trash' => __( 'No submissions found in Trash.', 'competitions-leaderboard' )
+			'not_found_in_trash' => __( 'No submissions found in Trash.', 'competitions-leaderboard' ),
 		);
 
 		$args = array(
@@ -776,7 +1073,7 @@ class Plugin {
 			'show_in_rest'        => false,
 			'has_archive'         => false,
 			'hierarchical'        => false,
-			'supports'            => array( 'title', 'author' )
+			'supports'            => array( 'title', 'author' ),
 		);
 
 		register_post_type( 'submission', $args );
@@ -900,12 +1197,12 @@ class Plugin {
 		}
 
 		?>
-        <tr class="form-field">
-            <th scope="row" valign="top">
-                <label for="cat_description"><?php esc_html_e( 'Description', 'competitions-leaderboard' ); ?></label>
-            </th>
-            <td>
-                <div class="form-field term-meta-wrap">
+		<tr class="form-field">
+			<th scope="row" valign="top">
+				<label for="cat_description"><?php esc_html_e( 'Description', 'competitions-leaderboard' ); ?></label>
+			</th>
+			<td>
+				<div class="form-field term-meta-wrap">
 					<?php
 
 					$settings = array(
@@ -913,14 +1210,14 @@ class Plugin {
 						'media_buttons' => true,
 						'quicktags'     => true,
 						'textarea_rows' => '15',
-						'textarea_name' => 'description'
+						'textarea_name' => 'description',
 					);
 					wp_editor( wp_kses_post( $description ), 'cat_description', $settings );
 
 					?>
-                </div>
-            </td>
-        </tr>
+				</div>
+			</td>
+		</tr>
 
 		<?php
 
@@ -930,12 +1227,12 @@ class Plugin {
 		global $current_screen;
 		if ( $current_screen->id === 'edit-competition' ) {
 			?>
-            <script type="text/javascript">
-                jQuery(function ($) {
-                    $('textarea#tag-description, textarea#description').closest('.form-field').remove();
-                })
+			<script type="text/javascript">
+				jQuery(function ($) {
+					$('textarea#tag-description, textarea#description').closest('.form-field').remove();
+				})
 
-            </script>
+			</script>
 			<?php
 		}
 	}
@@ -966,7 +1263,7 @@ class Plugin {
 		return false;
 	}
 
-	public function competitions_app_shortcode( $atts = [] ) {
+	public function competitions_app_shortcode( $atts = array() ) {
 		add_action(
 			'wp_footer',
 			function () {
@@ -979,17 +1276,22 @@ class Plugin {
 
 	}
 
-	public function shortcode_submission( $atts = [] ) {
-		extract( shortcode_atts( array(
-			'competition' => '',
-		), $atts ) );
+	public function shortcode_submission( $atts = array() ) {
+		extract(
+			shortcode_atts(
+				array(
+					'competition' => '',
+				),
+				$atts
+			)
+		);
 
 		$competition       = ! empty( $competition ) ? $competition : get_queried_object_id();
 		$submission_option = get_term_meta( $competition, '_enable_submissions', true );
 
 		if ( ! is_user_logged_in() && $submission_option !== 'guests' ) {
 			echo '<p class="alert alert-warning submissions-no-user">Please ' .
-			     '<a class="kleo-show-login" href="' . wp_login_url() . '">login</a> to submit data.</p>';
+				 '<a class="kleo-show-login" href="' . wp_login_url() . '">login</a> to submit data.</p>';
 
 			return '';
 		}
@@ -1023,30 +1325,30 @@ class Plugin {
 
 		ob_start();
 		?>
-        <tr>
-            <td class="submission-count"><?php echo $count; ?></td>
-            <td><?php echo esc_html( get_the_title( $submission ) ); ?></td>
-            <td><?php echo esc_html( $name ); ?></td>
-            <td>
+		<tr>
+			<td class="submission-count"><?php echo $count; ?></td>
+			<td><?php echo esc_html( get_the_title( $submission ) ); ?></td>
+			<td><?php echo esc_html( $name ); ?></td>
+			<td>
 				<?php echo get_post_meta( $submission->ID, '_score', true ); ?>
 				<?php if ( $is_current_user && self::get_log_content( $submission->ID ) !== false ) { ?>
-                    <span data-placement="top" class="submission-log click-pop" data-toggle="popover"
-                          data-title="Submission info"
-                          data-content="<?php echo esc_attr( self::get_log_content( $submission->ID ) ); ?>">
+					<span data-placement="top" class="submission-log click-pop" data-toggle="popover"
+						  data-title="Submission info"
+						  data-content="<?php echo esc_attr( self::get_log_content( $submission->ID ) ); ?>">
 							<i class="icon-info-circled"></i>
 						</span>
 
 
 				<?php } ?>
-            </td>
-            <td><?php echo get_the_date( 'M j, Y H:i', $submission->ID ) ?></td>
-        </tr>
+			</td>
+			<td><?php echo get_the_date( 'M j, Y H:i', $submission->ID ); ?></td>
+		</tr>
 		<?php
 		return ob_get_clean();
 	}
 
 	/**
-	 * @param null $competition
+	 * @param null   $competition
 	 * @param string $search_term
 	 * @param string $sort_order
 	 *
@@ -1062,35 +1364,37 @@ class Plugin {
 
 		$author_query = '';
 		if ( is_user_logged_in() && isset( $_POST['current_user'] ) && (bool) $_POST['current_user'] === true ) {
-			$author_query = " AND {$wpdb->prefix}posts.post_author IN (" . get_current_user_id() . ")";
+			$author_query = " AND {$wpdb->prefix}posts.post_author IN (" . get_current_user_id() . ')';
 		}
 
 		$search_query = '';
 		if ( ! empty( $search_term ) ) {
-			$search_query = " AND (" .
-			                "(mt1.meta_key = '_submission_notes' AND mt1.meta_value LIKE '%%%s%%')" .
-			                "OR {$wpdb->prefix}posts.post_title LIKE '%%%s%%'" .
-			                ")";
+			$search_query = ' AND (' .
+							"(mt1.meta_key = '_submission_notes' AND mt1.meta_value LIKE '%%%s%%')" .
+							"OR {$wpdb->prefix}posts.post_title LIKE '%%%s%%'" .
+							')';
 		}
 
 		$submissions_query = "SELECT $wpdb->posts.* FROM $wpdb->posts" .
-		                     " LEFT JOIN {$wpdb->prefix}term_relationships ON ({$wpdb->posts}.ID = {$wpdb->prefix}term_relationships.object_id)" .
-		                     " INNER JOIN {$wpdb->prefix}postmeta ON ( {$wpdb->prefix}posts.ID = {$wpdb->prefix}postmeta.post_id )" .
-		                     " INNER JOIN {$wpdb->prefix}postmeta AS mt1 ON ( {$wpdb->prefix}posts.ID = mt1.post_id )" .
-		                     " WHERE" .
-		                     " {$wpdb->prefix}term_relationships.term_taxonomy_id IN ($competition)" .
-		                     $author_query .
-		                     " AND ( {$wpdb->prefix}postmeta.meta_key = '_score' AND {$wpdb->prefix}postmeta.meta_value > '0' )" .
-		                     $search_query .
-		                     " AND {$wpdb->prefix}posts.post_type = 'submission'" .
-		                     " AND {$wpdb->prefix}posts.post_status = 'publish'" .
-		                     " GROUP BY {$wpdb->prefix}posts.ID" .
-		                     " ORDER BY {$wpdb->prefix}postmeta.meta_value+0 " . $sort_order;
+							 " LEFT JOIN {$wpdb->prefix}term_relationships ON ({$wpdb->posts}.ID = {$wpdb->prefix}term_relationships.object_id)" .
+							 " INNER JOIN {$wpdb->prefix}postmeta ON ( {$wpdb->prefix}posts.ID = {$wpdb->prefix}postmeta.post_id )" .
+							 " INNER JOIN {$wpdb->prefix}postmeta AS mt1 ON ( {$wpdb->prefix}posts.ID = mt1.post_id )" .
+							 ' WHERE' .
+							 " {$wpdb->prefix}term_relationships.term_taxonomy_id IN ($competition)" .
+							 $author_query .
+							 " AND ( {$wpdb->prefix}postmeta.meta_key = '_score' AND {$wpdb->prefix}postmeta.meta_value > '0' )" .
+							 $search_query .
+							 " AND {$wpdb->prefix}posts.post_type = 'submission'" .
+							 " AND {$wpdb->prefix}posts.post_status = 'publish'" .
+							 " GROUP BY {$wpdb->prefix}posts.ID" .
+							 " ORDER BY {$wpdb->prefix}postmeta.meta_value+0 " . $sort_order;
 
 		if ( $search_term ) {
 			$submissions_query = $wpdb->prepare(
 				$submissions_query,
-				$wpdb->esc_like( $search_term ), $wpdb->esc_like( $search_term ) );
+				$wpdb->esc_like( $search_term ),
+				$wpdb->esc_like( $search_term )
+			);
 		}
 
 		return $wpdb->get_results( $submissions_query );
@@ -1115,19 +1419,23 @@ class Plugin {
 				foreach ( $submissions as $submission ) {
 					$result .= self::get_leaderboard_row( $submission, $competition );
 				}
-				wp_send_json_success( [ 'results' => $result ] );
+				wp_send_json_success( array( 'results' => $result ) );
 				exit;
 			}
-
 		}
-		wp_send_json_success( [ 'results' => false ] );
+		wp_send_json_success( array( 'results' => false ) );
 		exit;
 	}
 
-	public function shortcode_leaderboard( $atts = [] ) {
-		extract( shortcode_atts( array(
-			'competition' => '',
-		), $atts ) );
+	public function shortcode_leaderboard( $atts = array() ) {
+		extract(
+			shortcode_atts(
+				array(
+					'competition' => '',
+				),
+				$atts
+			)
+		);
 
 		wp_enqueue_script( 'iarai-submissions' );
 
@@ -1173,17 +1481,20 @@ class Plugin {
 			return;
 		}
 
-		add_action( 'admin_head-edit.php', function () {
-			global $current_screen;
+		add_action(
+			'admin_head-edit.php',
+			function () {
+				global $current_screen;
 
-			?>
-            <script type="text/javascript">
-                jQuery(document).ready(function ($) {
-                    jQuery(jQuery(".wrap h1")[0]).append("<a onclick=\"window.location='" + window.location.href + "&export-csv'\" id='iarai-export-csv' class='add-new-h2'>Export CSV</a>");
-                });
-            </script>
-			<?php
-		} );
+				?>
+			<script type="text/javascript">
+				jQuery(document).ready(function ($) {
+					jQuery(jQuery(".wrap h1")[0]).append("<a onclick=\"window.location='" + window.location.href + "&export-csv'\" id='iarai-export-csv' class='add-new-h2'>Export CSV</a>");
+				});
+			</script>
+				<?php
+			}
+		);
 
 		if ( ! isset( $_GET['export-csv'] ) ) {
 			return;
@@ -1205,11 +1516,11 @@ class Plugin {
 		);
 		$data_rows  = array();
 
-		$args = [
+		$args = array(
 			'post_status'    => 'publish',
 			'posts_per_page' => - 1,
 			'post_type'      => 'submission',
-		];
+		);
 
 		$submissions = get_posts( $args );
 
@@ -1223,13 +1534,13 @@ class Plugin {
 
 			if ( $terms && ! is_wp_error( $terms ) ) {
 
-				$terms_arr = [];
+				$terms_arr = array();
 
 				foreach ( $terms as $term ) {
 					$terms_arr[] = $term->name;
 				}
 
-				$terms_text = join( ", ", $terms_arr );
+				$terms_text = join( ', ', $terms_arr );
 			}
 
 			if ( $competitions && ! is_wp_error( $competitions ) ) {
@@ -1260,7 +1571,7 @@ class Plugin {
 				self::get_score_number( $submission->ID ),
 				$sub_id,
 				( self::get_log_content( $submission->ID ) ? self::get_log_content( $submission->ID ) : '' ),
-				get_the_date( 'Y-m-d H:i', $submission->ID )
+				get_the_date( 'Y-m-d H:i', $submission->ID ),
 			);
 			$data_rows[] = $row;
 		}
