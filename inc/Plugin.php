@@ -549,7 +549,7 @@ class Plugin {
 													),
 												)
 											),
-											Field::make( 'date_time', 'date_time', 'Date' )
+											Field::make( 'date_time', 'date', 'Date' )
 												->set_input_format( 'Y-m-d H:i', 'Y-m-d H:i' )
 												->set_width( 50 )
 												->set_picker_options(
@@ -830,9 +830,9 @@ class Plugin {
 									Field::make( 'select', 'role', 'Role in competition' )
 									->add_options(
 										array(
-											'member'   => 'Member',
-											'chair'    => 'Chair',
-											'co-chair' => 'Co-Chair',
+											'Member'   => 'Member',
+											'Chair'    => 'Chair',
+											'Co-Chair' => 'Co-Chair',
 
 										)
 									),
@@ -863,8 +863,8 @@ class Plugin {
 									Field::make( 'select', 'role', 'Role in competition' )
 									->add_options(
 										array(
-											'co-chair' => 'Team',
-											'chair'    => 'Core Organizer',
+											'Co-Chair' => 'Team',
+											'Chair'    => 'Core Organizer',
 										)
 									),
 									Field::make( 'text', 'affiliation', 'Affiliation' ),
@@ -1052,6 +1052,7 @@ class Plugin {
 			array(
 				'apiRoot' => esc_url_raw( rest_url() ),
 				'appBase' => esc_url_raw( rtrim( is_multisite() ? get_blog_details()->path : '', '/\\' ) ),
+				'pluginBase' => CLEAD_URL . 'lib/react-competitions/public',
 				'nonce'   => wp_create_nonce( 'wp_rest' ),
 			)
 		);
