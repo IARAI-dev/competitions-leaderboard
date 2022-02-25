@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: Competitions & Leaderboard
+Plugin Name: Competitions & Leaderboard V2.0
 Description: Add competitions, submissions and leaderboard
 Version: 2.0.0
 Text Domain: competitions-leaderboard

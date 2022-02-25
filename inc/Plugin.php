@@ -52,6 +52,7 @@ class Plugin {
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
+		// add main site header
 		add_action(
 			'wp',
 			function() {
@@ -66,55 +67,32 @@ class Plugin {
 					return;
 				}
 
-				if ( has_shortcode( $post->post_content, 'competitions_app' ) ) {
-
-					//Remove existing header
-					remove_action( 'kleo_header', 'kleo_show_header' );
-
-					// Disable sticky header
-					add_filter(
-						'body_class',
-						function( $class ) {
-							if ( ( $key = array_search( 'kleo-navbar-fixed', $class ) ) !== false ) {
-								unset( $class[ $key ] );
-							}
-							return $class;
-						}
-					);
-
-					// Replace header with main site header
-					add_action(
-						'kleo_header',
-						function() {
-
-							// delete_transient( 'main_page_header' );
-							if ( $header = get_transient( 'main_page_header' ) ) {
-								echo $header;
-								return;
-							}
-
-							$request = wp_remote_get( network_site_url() );
-							$html    = wp_remote_retrieve_body( $request );
-							// preg_match('/<div id="header" class="header-color">(.*?)<\/div>/s', $html, $match);
-
-							$dom = new \DOMDocument();
-							libxml_use_internal_errors( true );
-
-							$dom->loadHTML( $html );
-
-							$xpath = new \DOMXPath( $dom );
-
-							$div = $xpath->query( '//*[@id="header"]' );
-
-							$div = $div->item( 0 );
-
-							set_transient( 'main_page_header', $dom->saveHTML( $div ), 60 * 60 );
-
-							echo $dom->saveHTML( $div );
-
-						}
-					);
+				if ( ! has_shortcode( $post->post_content, 'competitions_app' ) ) {
+					return;
 				}
+
+				// Remove existing header
+				if (is_home() || is_front_page() ) {
+					remove_action( 'kleo_header', 'kleo_show_header' );
+				}
+
+				// Disable sticky header
+				add_filter(
+					'body_class',
+					function( $class ) {
+						if ( ( $key = array_search( 'kleo-navbar-fixed', $class ) ) !== false ) {
+							unset( $class[ $key ] );
+						}
+						return $class;
+					}
+				);
+
+				// set logo back to regular one
+				remove_all_filters( 'kleo_logo_href', 10 );
+
+				// Replace header with main site header
+				add_action( 'kleo_header', [ $this, 'main_site_header' ], 9 );
+
 			}
 		);
 
@@ -217,6 +195,39 @@ class Plugin {
 		// }
 		// } );
 	}
+
+
+	public function main_site_header() {
+
+		remove_action( 'kleo_header', [ $this, 'main_site_header' ], 9 );
+
+		delete_transient( 'main_page_header' );
+		if ( $header = get_transient( 'main_page_header' ) ) {
+			echo $header;
+			return;
+		}
+
+		$request = wp_remote_get( network_site_url() );
+		$html    = wp_remote_retrieve_body( $request );
+
+		$dom = new \DOMDocument();
+		libxml_use_internal_errors( true );
+
+		$dom->loadHTML( $html );
+
+		$xpath = new \DOMXPath( $dom );
+
+		$div = $xpath->query( '//*[@id="header"]' );
+
+		$div = $div->item( 0 );
+		$div = $dom->saveHTML( $div );
+		$div = str_replace( 'class="header-color"', 'class="alternate-color competition-main-site"', $div );
+
+		set_transient( 'main_page_header', $div, 60 * 60 );
+
+		echo $div;
+
+	} 
 
 	public function api_get_main_competition() {
 
@@ -538,14 +549,18 @@ class Plugin {
 													),
 												)
 											),
-											Field::make( 'date_time', 'date', 'Date' )
+											Field::make( 'date_time', 'date_time', 'Date' )
 												->set_input_format( 'Y-m-d H:i', 'Y-m-d H:i' )
+												->set_width( 50 )
 												->set_picker_options(
 													array(
 														'time_24hr' => true,
 														'enableSeconds' => false,
 													)
 												),
+											Field::make( 'select', 'timezone', 'Timezone' )
+												->set_width( 50 )
+												->add_options( array( 'CET', 'AoE' ) ),
 										)
 									)
 									  ->set_header_template( ' <%- date ? date : ($_index+1) %>' ),
@@ -735,22 +750,32 @@ class Plugin {
 													),
 												)
 											),
-											Field::make( 'date', 'competition_start_date', 'Leaderboard Start Date' )
-											->set_input_format( 'Y-m-d H:i', 'Y-m-d H:i' )
+											Field::make( 'date_time', 'competition_start_date', 'Leaderboard Start Date' )
+												->set_width( 50 )
+												->set_input_format( 'Y-m-d H:i', 'Y-m-d H:i' )
 												->set_picker_options(
 													array(
 														'time_24hr' => true,
 														'enableSeconds' => false,
 													)
 												),
-											Field::make( 'date', 'competition_end_date', 'Leaderboard End Date' )
-											->set_input_format( 'Y-m-d H:i', 'Y-m-d H:i' )
+
+											Field::make( 'select', 'timezone_start_date', 'Timezone' )
+												->set_width( 50 )
+												->add_options( array( 'CET', 'AoE' ) ),
+
+											Field::make( 'date_time', 'competition_end_date', 'Leaderboard End Date' )
+												->set_width( 50 )
+												->set_input_format( 'Y-m-d H:i', 'Y-m-d H:i' )
 												->set_picker_options(
 													array(
 														'time_24hr' => true,
 														'enableSeconds' => false,
 													)
 												),
+											Field::make( 'select', 'timezone_end_date', 'Timezone' )
+												->set_width( 50 )
+												->add_options( array( 'CET', 'AoE' ) ),
 
 											/*
 											Field::make( 'text', 'competition_score_decimals', 'Score decimals' )
