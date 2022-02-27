@@ -72,7 +72,7 @@ class Plugin {
 				}
 
 				// Remove existing header
-				if (is_home() || is_front_page() ) {
+				if ( is_home() || is_front_page() ) {
 					remove_action( 'kleo_header', 'kleo_show_header' );
 				}
 
@@ -91,7 +91,7 @@ class Plugin {
 				remove_all_filters( 'kleo_logo_href', 10 );
 
 				// Replace header with main site header
-				add_action( 'kleo_header', [ $this, 'main_site_header' ], 9 );
+				add_action( 'kleo_header', array( $this, 'main_site_header' ), 9 );
 
 			}
 		);
@@ -161,6 +161,17 @@ class Plugin {
 						},
 					)
 				);
+				register_rest_route(
+					'competition/v1',
+					'/past',
+					array(
+						'methods'             => 'GET',
+						'callback'            => array( $this, 'api_get_past_competitions' ),
+						'permission_callback' => function () {
+							return true;
+						},
+					)
+				);
 			}
 		);
 
@@ -199,7 +210,7 @@ class Plugin {
 
 	public function main_site_header() {
 
-		remove_action( 'kleo_header', [ $this, 'main_site_header' ], 9 );
+		remove_action( 'kleo_header', array( $this, 'main_site_header' ), 9 );
 
 		delete_transient( 'main_page_header' );
 		if ( $header = get_transient( 'main_page_header' ) ) {
@@ -227,7 +238,47 @@ class Plugin {
 
 		echo $div;
 
-	} 
+	}
+
+	public function api_get_past_competitions() {
+
+		$terms = get_terms(
+			array(
+				'taxonomy'   => 'competition',
+				'hide_empty' => false,
+				'meta_query' => array(
+					'relation' => 'AND',
+					array(
+						'key'     => '_competition_is_main',
+						'value'   => 'yes',
+						'compare' => '!=',
+					),
+					array(
+						'key'     => '_competition_is_main',
+						'compare' => 'NOT EXISTS',
+					),
+
+				),
+			)
+		);
+
+		if ( empty( $terms ) ) {
+			return new \WP_REST_Response( [] , 200 );
+		}
+
+		$data = [];
+
+		foreach ( $terms as $term ) {
+			$data[] = [
+				'id' => $term->term_id,
+				'name' => $term->name,
+				'slug' => $term->slug,
+			];
+		}
+
+		return new \WP_REST_Response( $data, 200 );
+
+	}
 
 	public function api_get_main_competition() {
 
@@ -1050,10 +1101,10 @@ class Plugin {
 			'competitions-react',
 			'wpApiSettings',
 			array(
-				'apiRoot' => esc_url_raw( rest_url() ),
-				'appBase' => esc_url_raw( rtrim( is_multisite() ? get_blog_details()->path : '', '/\\' ) ),
+				'apiRoot'    => esc_url_raw( rest_url() ),
+				'appBase'    => esc_url_raw( rtrim( is_multisite() ? get_blog_details()->path : '', '/\\' ) ),
 				'pluginBase' => CLEAD_URL . 'lib/react-competitions/public',
-				'nonce'   => wp_create_nonce( 'wp_rest' ),
+				'nonce'      => wp_create_nonce( 'wp_rest' ),
 			)
 		);
 
