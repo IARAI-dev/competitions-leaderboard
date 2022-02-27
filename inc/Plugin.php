@@ -175,36 +175,53 @@ class Plugin {
 			}
 		);
 
-		// add_filter( 'generate_rewrite_rules', function ( $wp_rewrite ){
-		// $wp_rewrite->rules = array_merge(
-		// ['events/?$' => 'index.php?compage=events'],
-		// $wp_rewrite->rules
-		// );
-		// $wp_rewrite->rules = array_merge(
-		// ['challenge/?$' => 'index.php?compage=challenge'],
-		// $wp_rewrite->rules
-		// );
-		// $wp_rewrite->rules = array_merge(
-		// ['connect/?$' => 'index.php?compage=connect'],
-		// $wp_rewrite->rules
-		// );
-		// } );
+		add_filter(
+			'generate_rewrite_rules',
+			function ( $wp_rewrite ) {
+				$wp_rewrite->rules = array_merge(
+					array( 'events/?$' => 'index.php?compzone=events' ),
+					$wp_rewrite->rules
+				);
+				$wp_rewrite->rules = array_merge(
+					array( 'challenge/?$' => 'index.php?compzone=challenge' ),
+					$wp_rewrite->rules
+				);
+				$wp_rewrite->rules = array_merge(
+					array( 'connect/?$' => 'index.php?compzone=connect' ),
+					$wp_rewrite->rules
+				);
+				$wp_rewrite->rules = array_merge(
+					array( 'competition\/?([a-z0-9_-]*)\/?([a-z0-9_-]*)$' => 'index.php?compage=competition&compslug=$matches[1]&compzone=$matches[2]' ),
+					$wp_rewrite->rules
+				);
+			}
+		);
 
-		// add_filter( 'query_vars', function( $query_vars ) {
-		// $query_vars[] = 'events';
-		// $query_vars[] = 'challenge';
-		// $query_vars[] = 'connect';
-		// return $query_vars;
-		// } );
+		add_filter(
+			'query_vars',
+			function( $query_vars ) {
+				$query_vars[] = 'compage';
+				$query_vars[] = 'compslug';
+				$query_vars[] = 'compzone';
+				return $query_vars;
+			}
+		);
 
-		// add_action( 'template_redirect', function() {
-		// $page = get_query_var( 'compage' );
-		// if ( $page ) {
-		// add_filter('the_content', function() {
-		// return do_shortcode['competitions_app'];
-		// });
-		// }
-		// } );
+		add_action(
+			'template_redirect',
+			function() {
+				$competition = get_query_var( 'compage' );
+				$competition_zone = get_query_var( 'compzone' );
+
+				if ( $competition_zone || $competition ) {
+					$file = CLEAD_PATH . 'templates/competition-page.php';
+					if ( file_exists( $file ) ) {
+						include $file;
+						exit;
+					}
+				}
+			}
+		);
 	}
 
 
@@ -263,17 +280,20 @@ class Plugin {
 		);
 
 		if ( empty( $terms ) ) {
-			return new \WP_REST_Response( [] , 200 );
+			return new \WP_REST_Response( array(), 200 );
 		}
 
-		$data = [];
+		$data = array();
 
 		foreach ( $terms as $term ) {
-			$data[] = [
-				'id' => $term->term_id,
+			$link_prefix = carbon_get_term_meta( $term->term_id, 'competition_is_v2' ) ? 'competition/' : 'competitions/';
+
+			$data[] = array(
+				'id'   => $term->term_id,
 				'name' => $term->name,
 				'slug' => $term->slug,
-			];
+				'link' => $link_prefix . $term->slug,
+			);
 		}
 
 		return new \WP_REST_Response( $data, 200 );
@@ -297,20 +317,30 @@ class Plugin {
 
 		$page = sanitize_text_field( $_GET['page'] );
 
-		$terms = get_terms(
-			array(
-				'taxonomy'   => 'competition',
-				'hide_empty' => false,
-				'meta_key'   => '_competition_is_main',
-				'meta_value' => 'yes',
-			)
+		$args = array(
+			'taxonomy'   => 'competition',
+			'hide_empty' => false,
+			'meta_key'   => '_competition_is_main',
+			'meta_value' => 'yes',
 		);
+
+		$terms = get_terms( $args );
 
 		if ( empty( $terms ) ) {
 			return new \WP_REST_Response( array( 'error' => 'Nothing here' ), 404 );
 		}
 
-		$competition = $terms[0];
+		if ( isset( $_GET['competition'] ) && ! empty( $_GET['competition'] ) ) {
+			$current_competition = sanitize_text_field( $_GET['competition'] );
+			foreach ( $terms as $term ) {
+				if ( $term->slug === $current_competition ) {
+					$competition = $term;
+					break;
+				}
+			}
+		} else {
+			$competition = $terms[0];
+		}
 
 		$is_public = carbon_get_term_meta( $competition->term_id, 'competition_is_public' );
 
@@ -942,7 +972,9 @@ class Plugin {
 					__( 'Deprecated' ),
 					array(
 						Field::make( 'html', 'deprecated_html' )->set_html( '<h2>Please ignore all these fields.</h2>' ),
-
+						Field::make( 'checkbox', 'competition_is_v2', 'New template' )
+						->set_default_value( 'yes' )
+							 ->set_help_text( 'Is this using the new 2.0 template?' ),
 						Field::make( 'rich_text', 'competition_pre_text', 'Before Text(Deprecated)' ),
 						Field::make( 'select', 'competition_leaderboard', 'Enable Leaderboard' )
 							->add_options(
