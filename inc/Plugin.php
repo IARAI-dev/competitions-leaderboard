@@ -70,6 +70,9 @@ class Plugin {
 				$competition      = get_query_var( 'compage' );
 				$competition_zone = get_query_var( 'compzone' );
 
+				// Replace header with main site header
+				add_action( 'kleo_header', array( $this, 'main_site_header' ), 9 );
+
 				if ( ! has_shortcode( $post->post_content, 'competitions_app' ) && ! $competition && ! $competition_zone ) {
 					return;
 				}
@@ -81,9 +84,6 @@ class Plugin {
 
 				// set logo back to regular one
 				remove_all_filters( 'kleo_logo_href', 10 );
-
-				// Replace header with main site header
-				add_action( 'kleo_header', array( $this, 'main_site_header' ), 9 );
 
 			}
 		);
@@ -1181,6 +1181,7 @@ class Plugin {
 		wp_register_style( 'competitions-react', CLEAD_URL . 'lib/react-competitions/build/static/main.css', array(), CLEAD_VERSION, 'all' );
 		wp_register_script( 'competitions-react', CLEAD_URL . 'lib/react-competitions/build/static/main.js', array(), CLEAD_VERSION, true );
 
+		$submit_nonce = wp_create_nonce( 'iarai-submissions-nonce' );
 		$competition_slug = get_query_var( 'compslug' );
 		$competition_zone = get_query_var( 'compzone' );
 
@@ -1191,6 +1192,7 @@ class Plugin {
 			'appRoute'   => '/',
 			'pluginBase' => CLEAD_URL . 'lib/react-competitions/public',
 			'nonce'      => wp_create_nonce( 'wp_rest' ),
+			'nonceSubmit'      => $submit_nonce,
 		);
 		if ( ! empty( $competition_slug ) ) {
 			$localize_data['appPath'] .= "/competition/$competition_slug";
@@ -1213,7 +1215,7 @@ class Plugin {
 			'iaraiSubmissionsParams',
 			array(
 				'ajaxurl'   => admin_url( 'admin-ajax.php' ),
-				'ajaxNonce' => wp_create_nonce( 'iarai-submissions-nonce' ),
+				'ajaxNonce' => $submit_nonce,
 			)
 		);
 	}
