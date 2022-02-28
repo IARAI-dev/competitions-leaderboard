@@ -166,13 +166,20 @@ class Plugin {
 					array( 'contact/?$' => 'index.php?compzone=contact' ),
 					$wp_rewrite->rules
 				);
-								$wp_rewrite->rules = array_merge(
-									array( 'submit/?$' => 'index.php?compzone=submit' ),
-									$wp_rewrite->rules
-								);
-
 				$wp_rewrite->rules = array_merge(
-					array( 'competition\/?([a-z0-9_-]*)\/?([a-z0-9_-]*)$' => 'index.php?compage=competition&compslug=$matches[1]&compzone=$matches[2]' ),
+					array( 'submit/?$' => 'index.php?compzone=submit' ),
+					$wp_rewrite->rules
+				);
+
+				// Past competitions home page
+				$wp_rewrite->rules = array_merge(
+					array( 'competition\/([a-z0-9_-]+)\/?$' => 'index.php?compage=competition&compslug=$matches[1]' ),
+					$wp_rewrite->rules
+				);
+
+				// Past competitions other pages
+				$wp_rewrite->rules = array_merge(
+					array( 'competition\/([a-z0-9_-]+)\/([a-z0-9_-]+)\/?$' => 'index.php?compage=competition&compslug=$matches[1]&compzone=$matches[2]' ),
 					$wp_rewrite->rules
 				);
 			}
@@ -1612,7 +1619,7 @@ class Plugin {
 				$submissions = Submissions::get_submissions( $competition, $user, $challenge, $leaderboard );
 
 				if ( empty( $submissions ) ) {
-					wp_send_json_success( array( 'results' => false ), 404 );
+					wp_send_json_success( array( 'results' => [] ), 200 );
 					exit;
 				}
 

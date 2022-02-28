@@ -14,7 +14,6 @@ $competition_name = '';
 $competition_link = '';
 $competition_slug = get_query_var( 'compslug' );
 $zone             = get_query_var( 'compzone' );
-$zone_name        = str_replace( str_replace( array( 'https://', 'http://' ), '', home_url( '/' ) ), '', $_SERVER['HTTP_HOST'] . explode( '?', $_SERVER['REQUEST_URI'], 2 )[0] );
 
 // Set the competition name.
 if ( ! empty( $competition_slug ) && get_term_by( 'slug', $competition_slug, 'competition' ) ) {
@@ -35,6 +34,10 @@ if ( ! empty( $competition_slug ) && get_term_by( 'slug', $competition_slug, 'co
 		$competition_slug = $terms[0]->slug;
 	}
 }
+
+//Set zone name based on URL
+$zone_name = str_replace( str_replace( array( 'https://', 'http://' ), '', home_url( '/' ) ), '', $_SERVER['HTTP_HOST'] . explode( '?', $_SERVER['REQUEST_URI'], 2 )[0] );
+$zone_name = ltrim( str_replace( $competition_link, '', $zone_name ), '/' );
 
 // Add main site header.
 add_action( 'kleo_header', array( Plugin::instance(), 'main_site_header' ), 9 );
