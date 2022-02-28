@@ -183,6 +183,19 @@ class Plugin {
 					$wp_rewrite->rules
 				);
 				$wp_rewrite->rules = array_merge(
+					array( 'organising-committee/?$' => 'index.php?compzone=orgcommittee' ),
+					$wp_rewrite->rules
+				);
+				$wp_rewrite->rules = array_merge(
+					array( 'scientific-committee/?$' => 'index.php?compzone=scicommittee' ),
+					$wp_rewrite->rules
+				);
+				$wp_rewrite->rules = array_merge(
+					array( 'contact/?$' => 'index.php?compzone=contact' ),
+					$wp_rewrite->rules
+				);
+
+				$wp_rewrite->rules = array_merge(
 					array( 'competition\/?([a-z0-9_-]*)\/?([a-z0-9_-]*)$' => 'index.php?compage=competition&compslug=$matches[1]&compzone=$matches[2]' ),
 					$wp_rewrite->rules
 				);
@@ -525,7 +538,11 @@ class Plugin {
 						Field::make( 'checkbox', 'competition_is_main', 'Current competition' )
 							 ->set_help_text( 'Is this the current competition?' ),
 
-						Field::make( 'checkbox', 'competition_is_public', 'Public/Internal competition' )
+						Field::make( 'radio', 'competition_is_public', 'Public/Internal competition' )
+						->add_options( array(
+							'' => 'Internal',
+							'yes' => 'Public',
+						) )
 							 ->set_help_text( 'Is the competition available to the public or just for logged in users' ),
 
 						Field::make( 'text', 'competition_main_long_name', 'Competition long name' )
