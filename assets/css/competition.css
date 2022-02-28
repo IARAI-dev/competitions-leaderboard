@@ -1,0 +1,13 @@
+.competition-main-site .kleo-show-login {
+  display: none !important;
+}
+
+.header-color .logo img {
+  padding-top: 17px;
+  padding-bottom: 17px;
+  display: inline-block;
+}
+
+.alternate-color .logo img {
+  margin-top: 10px;
+}

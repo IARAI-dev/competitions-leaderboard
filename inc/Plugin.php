@@ -230,7 +230,12 @@ class Plugin {
 			// disable sticky.
 			if ( ! empty( $competition_zone ) ) {
 				$header = str_replace( $replace_class, $replace_class . ' disable-sticky', $header );
+
+				// Prevent duplicate header id
+				$header = str_replace( 'id="header"', 'id="header-main-site"', $header );
 			}
+
+			
 
 			echo $header;
 			return;
@@ -262,6 +267,9 @@ class Plugin {
 		// disable sticky
 		if ( ! empty( $competition_zone ) ) {
 			$div = str_replace( $replace_class, $replace_class . ' disable-sticky', $div );
+
+			// Prevent duplicate header id
+			$div = str_replace( 'id="header"', 'id="header-main-site"', $div );
 		}
 
 		echo $div;
@@ -1176,6 +1184,9 @@ class Plugin {
 
 	public function enqueue_scripts() {
 
+		//general styles
+		wp_enqueue_style( 'competitions', CLEAD_URL . 'assets/css/competition.css', array(), CLEAD_VERSION, 'all' );
+
 		wp_register_style( 'competitions-react', CLEAD_URL . 'lib/react-competitions/build/static/main.css', array(), CLEAD_VERSION, 'all' );
 		wp_register_script( 'competitions-react', CLEAD_URL . 'lib/react-competitions/build/static/main.js', array(), CLEAD_VERSION, true );
 
@@ -1196,7 +1207,6 @@ class Plugin {
 		if ( ! empty( $competition_slug ) ) {
 			$localize_data['appPath'] .= "/competition/$competition_slug";
 		}
-
 		if ( ! empty( $competition_zone ) ) {
 			$localize_data['appRoute'] .= $competition_zone;
 		}

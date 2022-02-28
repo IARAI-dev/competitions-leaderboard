@@ -14,7 +14,7 @@ $competition_name = '';
 $competition_link = '';
 $competition_slug = get_query_var( 'compslug' );
 $zone             = get_query_var( 'compzone' );
-$zone_name = str_replace( str_replace( array( 'https://', 'http://' ), '', home_url( '/' ) ), '', $_SERVER['HTTP_HOST'] . explode( '?', $_SERVER['REQUEST_URI'], 2 )[0] );
+$zone_name        = str_replace( str_replace( array( 'https://', 'http://' ), '', home_url( '/' ) ), '', $_SERVER['HTTP_HOST'] . explode( '?', $_SERVER['REQUEST_URI'], 2 )[0] );
 
 // Set the competition name.
 if ( ! empty( $competition_slug ) && get_term_by( 'slug', $competition_slug, 'competition' ) ) {
@@ -75,7 +75,7 @@ $breadcrumb = '<div class="kleo_framework breadcrumb" itemscope="" itemtype="htt
 
 </div>';
 
-$title_arr = array();
+$title_arr           = array();
 $title_arr['title']  = ucfirst( str_replace( array( '-', '_', '/' ), ' ', $zone_name ) );
 $title_arr['extra']  = '';
 $title_arr['output'] = "<section class='{class} border-bottom breadcrumbs-container'>
