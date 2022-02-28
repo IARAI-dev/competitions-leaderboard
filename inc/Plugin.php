@@ -60,43 +60,6 @@ class Plugin {
 		add_action( 'plugins_loaded', array( $this, 'plugins_loaded' ) );
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
-
-		// add main site header
-		add_action(
-			'wp',
-			function() {
-
-				global $post;
-
-				if ( empty( $post ) ) {
-					return;
-				}
-
-				if ( ! is_multisite() ) {
-					return;
-				}
-
-				$competition      = get_query_var( 'compage' );
-				$competition_zone = get_query_var( 'compzone' );
-
-				// Replace header with main site header
-				add_action( 'kleo_header', array( $this, 'main_site_header' ), 9 );
-
-				if ( ! has_shortcode( $post->post_content, 'competitions_app' ) && ! $competition && ! $competition_zone ) {
-					return;
-				}
-
-				// Remove existing header
-				if ( has_shortcode( $post->post_content, 'competitions_app' ) ) {
-					remove_action( 'kleo_header', 'kleo_show_header' );
-				}
-
-				// set logo back to regular one
-				remove_all_filters( 'kleo_logo_href', 10 );
-
-			}
-		);
-
 		add_action( 'wp_ajax_iarai_filter_leaderboard', array( $this, 'ajax_filter_leaderboard' ) );
 		add_action( 'wp_ajax_nopriv_iarai_filter_leaderboard', array( $this, 'ajax_filter_leaderboard' ) );
 
@@ -225,13 +188,19 @@ class Plugin {
 			}
 		);
 
+		/**
+		 * Replace with competition template
+		*/
 		add_action(
 			'template_redirect',
 			function() {
 				$competition      = get_query_var( 'compage' );
 				$competition_zone = get_query_var( 'compzone' );
 
-				if ( $competition_zone || $competition ) {
+				global $post;
+				$shortcode_on_page = ! empty( $post ) && has_shortcode( $post->post_content, 'competitions_app' );
+
+				if ( $competition_zone || $competition || $shortcode_on_page ) {
 					$file = CLEAD_PATH . 'templates/competition-page.php';
 					if ( file_exists( $file ) ) {
 						include $file;
@@ -240,6 +209,7 @@ class Plugin {
 				}
 			}
 		);
+
 	}
 
 
@@ -1621,8 +1591,8 @@ class Plugin {
 			// v2 React.
 			if ( isset( $_POST['challenge'], $_POST['leaderboard'] ) ) {
 
-				$challenge = sanitize_text_field( $_POST['challenge']);
-				$leaderboard = sanitize_text_field( $_POST['leaderboard']);
+				$challenge   = sanitize_text_field( $_POST['challenge'] );
+				$leaderboard = sanitize_text_field( $_POST['leaderboard'] );
 
 				$user = null;
 				if ( isset( $_POST['current_user'] ) && $_POST['current_user'] ) {
@@ -1656,7 +1626,8 @@ class Plugin {
 						'name'            => $name,
 						'score'           => self::get_score_number( $submission->ID ),
 						'date'            => get_the_date( 'Y-m-d H:i', $submission->ID ),
-						'notes'           => isset( $user ) ? $log . '. ' . $notes : '',
+						'log'           => isset( $user ) ? $log : '',
+						'notes'           => isset( $user ) ? $notes : '',
 						'is_current_user' => $is_current_user,
 					);
 				}
