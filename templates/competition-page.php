@@ -69,7 +69,7 @@ $breadcrumb = '<div class="kleo_framework breadcrumb" itemscope="" itemtype="htt
 
 </div>';
 
-$zone_name = str_replace( str_replace( array( 'https://', 'http://' ), '', home_url('/') ), '', $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] );
+$zone_name = str_replace( str_replace( array( 'https://', 'http://' ), '', home_url( '/' ) ), '', $_SERVER['HTTP_HOST'] . explode( '?', $_SERVER['REQUEST_URI'], 2 )[0] );
 
 
 $title_arr['title']  = ucfirst( str_replace( array( '-', '_', '/' ), ' ', $zone_name ) );

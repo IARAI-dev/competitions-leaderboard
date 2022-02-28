@@ -179,34 +179,34 @@ class Plugin {
 		add_filter(
 			'generate_rewrite_rules',
 			function ( $wp_rewrite ) {
-				$wp_rewrite->rules = array_merge(
+				$wp_rewrite->rules                 = array_merge(
 					array( 'events/?$' => 'index.php?compzone=events' ),
 					$wp_rewrite->rules
 				);
-				$wp_rewrite->rules = array_merge(
+				$wp_rewrite->rules                 = array_merge(
 					array( 'challenge/?$' => 'index.php?compzone=challenge' ),
 					$wp_rewrite->rules
 				);
-				$wp_rewrite->rules = array_merge(
+				$wp_rewrite->rules                 = array_merge(
 					array( 'connect/?$' => 'index.php?compzone=connect' ),
 					$wp_rewrite->rules
 				);
-				$wp_rewrite->rules = array_merge(
+				$wp_rewrite->rules                 = array_merge(
 					array( 'organising-committee/?$' => 'index.php?compzone=orgcommittee' ),
 					$wp_rewrite->rules
 				);
-				$wp_rewrite->rules = array_merge(
+				$wp_rewrite->rules                 = array_merge(
 					array( 'scientific-committee/?$' => 'index.php?compzone=scicommittee' ),
 					$wp_rewrite->rules
 				);
-				$wp_rewrite->rules = array_merge(
+				$wp_rewrite->rules                 = array_merge(
 					array( 'contact/?$' => 'index.php?compzone=contact' ),
 					$wp_rewrite->rules
 				);
-                                $wp_rewrite->rules = array_merge(
-                                        array( 'submit/?$' => 'index.php?compzone=submit' ),
-                                        $wp_rewrite->rules
-                                );
+								$wp_rewrite->rules = array_merge(
+									array( 'submit/?$' => 'index.php?compzone=submit' ),
+									$wp_rewrite->rules
+								);
 
 				$wp_rewrite->rules = array_merge(
 					array( 'competition\/?([a-z0-9_-]*)\/?([a-z0-9_-]*)$' => 'index.php?compage=competition&compslug=$matches[1]&compzone=$matches[2]' ),
@@ -245,7 +245,7 @@ class Plugin {
 
 	public function main_site_header() {
 
-		//delete_transient( 'main_page_header' );
+		// delete_transient( 'main_page_header' );
 
 		$replace_class    = 'alternate-color competition-main-site';
 		$competition_zone = get_query_var( 'compzone' );
@@ -698,7 +698,12 @@ class Plugin {
 												),
 											Field::make( 'select', 'timezone', 'Timezone' )
 												->set_width( 50 )
-												->add_options( array( 'CET' => 'CET', 'AoE' => 'AoE' ) ),
+												->add_options(
+													array(
+														'CET' => 'CET',
+														'AoE' => 'AoE',
+													)
+												),
 										)
 									)
 									  ->set_header_template( ' <%- date ? date : ($_index+1) %>' ),
@@ -1216,7 +1221,7 @@ class Plugin {
 			'pluginBase'  => CLEAD_URL . 'lib/react-competitions/public',
 			'nonce'       => wp_create_nonce( 'wp_rest' ),
 			'nonceSubmit' => $submit_nonce,
-			'ajaxurl'   => admin_url( 'admin-ajax.php' ),
+			'ajaxurl'     => admin_url( 'admin-ajax.php' ),
 		);
 		if ( ! empty( $competition_slug ) ) {
 			$localize_data['appPath'] .= "/competition/$competition_slug";
@@ -1610,9 +1615,54 @@ class Plugin {
 			global $wpdb;
 			$competition = (int) $_POST['competition'];
 
-			// Submissions
-
+			// Submissions.
 			$search_term = $_POST['term'];
+
+			// v2 React.
+			if ( isset( $_POST['challenge'] ) ) {
+
+				$user = null;
+				if ( isset( $_POST['current_user'] ) && $_POST['current_user'] ) {
+					$user = get_current_user_id();
+				}
+
+				$submissions = Submissions::get_submissions( $competition, $user );
+
+				if ( empty( $submissions ) ) {
+					wp_send_json_success( array( 'results' => false ), 404 );
+					exit;
+				}
+
+				$result = array();
+
+				foreach ( $submissions as $submission ) {
+
+					$user_id         = (int) $submission->post_author;
+					$user            = get_user_by( 'id', $user_id );
+					$name            = $user->display_name;
+					$team            = wp_get_post_terms( $submission->ID, 'team' );
+					$log             = ( self::get_log_content( $submission->ID ) ? self::get_log_content( $submission->ID ) : '' );
+					$notes           = get_post_meta( $submission->ID, '_submission_notes', true ) ?? '';
+					$is_current_user = ( is_user_logged_in() && $user_id === get_current_user_id() ) ? true : false;
+
+					if ( $team && ! empty( $team ) ) {
+						$name = $team[0]->name . ' - ' . $name;
+					}
+
+					$result[] = array(
+						'name'            => $name,
+						'score'           => self::get_score_number( $submission->ID ),
+						'date'            => get_the_date( 'Y-m-d H:i', $submission->ID ),
+						'notes'           => isset( $user ) ? $log . '. ' . $notes : '',
+						'is_current_user' => $is_current_user,
+					);
+				}
+
+				wp_send_json_success( array( 'results' => $result ), 200 );
+				exit;
+
+			}
+
 			$submissions = self::query_leaderboard( $competition, $search_term );
 
 			if ( $submissions ) {
