@@ -1619,14 +1619,17 @@ class Plugin {
 			$search_term = $_POST['term'];
 
 			// v2 React.
-			if ( isset( $_POST['challenge'] ) ) {
+			if ( isset( $_POST['challenge'], $_POST['leaderboard'] ) ) {
+
+				$challenge = sanitize_text_field( $_POST['challenge']);
+				$leaderboard = sanitize_text_field( $_POST['leaderboard']);
 
 				$user = null;
 				if ( isset( $_POST['current_user'] ) && $_POST['current_user'] ) {
 					$user = get_current_user_id();
 				}
 
-				$submissions = Submissions::get_submissions( $competition, $user );
+				$submissions = Submissions::get_submissions( $competition, $user, $challenge, $leaderboard );
 
 				if ( empty( $submissions ) ) {
 					wp_send_json_success( array( 'results' => false ), 404 );
