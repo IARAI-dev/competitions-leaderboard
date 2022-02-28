@@ -234,16 +234,20 @@ class Plugin {
 
 		remove_action( 'kleo_header', array( $this, 'main_site_header' ), 9 );
 
-		// delete_transient( 'main_page_header' );
+		delete_transient( 'main_page_header' );
 
-		$replace_class = 'alternate-color competition-main-site';
+		$replace_class    = 'alternate-color competition-main-site';
 		$competition_zone = get_query_var( 'compzone' );
 
+		// if main site.
+		if ( trailingslashit( network_site_url() ) === trailingslashit( home_url() ) ) {
+			return;
+		}
 
 		if ( $header = get_transient( 'main_page_header' ) ) {
 
-			// disable sticky
-			if( ! empty( $competition_zone ) ) {
+			// disable sticky.
+			if ( ! empty( $competition_zone ) ) {
 				$header = str_replace( $replace_class, $replace_class . ' disable-sticky', $header );
 			}
 
@@ -253,6 +257,10 @@ class Plugin {
 
 		$request = wp_remote_get( network_site_url() );
 		$html    = wp_remote_retrieve_body( $request );
+
+		if ( empty( $html ) ) {
+			return;
+		}
 
 		$dom = new \DOMDocument();
 		libxml_use_internal_errors( true );
@@ -266,12 +274,12 @@ class Plugin {
 		$div = $div->item( 0 );
 		$div = $dom->saveHTML( $div );
 
-		$div = str_replace( 'class="header-color"', 'class="' .  $replace_class . '"', $div );
+		$div = str_replace( 'class="header-color"', 'class="' . $replace_class . '"', $div );
 
 		set_transient( 'main_page_header', $div, 60 * 60 );
 
 		// disable sticky
-		if( ! empty( $competition_zone ) ) {
+		if ( ! empty( $competition_zone ) ) {
 			$div = str_replace( $replace_class, $replace_class . ' disable-sticky', $div );
 		}
 
@@ -310,9 +318,9 @@ class Plugin {
 		foreach ( $terms as $term ) {
 			$link = 'competition/' . $term->slug;
 
-			$v2 = carbon_get_term_meta( $term->term_id, 'competition_is_v2' );
+			$v2       = carbon_get_term_meta( $term->term_id, 'competition_is_v2' );
 			$old_link = carbon_get_term_meta( $term->term_id, 'competition_old_link' );
-			
+
 			if ( $v2 && $old_link ) {
 				$link = $old_link;
 			}
@@ -546,10 +554,12 @@ class Plugin {
 							 ->set_help_text( 'Is this the current competition?' ),
 
 						Field::make( 'radio', 'competition_is_public', 'Public/Internal competition' )
-						->add_options( array(
-							'' => 'Internal',
-							'yes' => 'Public',
-						) )
+						->add_options(
+							array(
+								''    => 'Internal',
+								'yes' => 'Public',
+							)
+						)
 							 ->set_help_text( 'Is the competition available to the public or just for logged in users' ),
 
 						Field::make( 'text', 'competition_main_long_name', 'Competition long name' )
@@ -724,8 +734,8 @@ class Plugin {
 											Field::make( 'text', 'prize', 'Prize' )
 												 ->set_attribute( 'maxLength', 200 )
 												 ->set_help_text( 'Max 200 characters' ),
-												 Field::make( 'text', 'ammount', 'Amount' )
-												 ->set_attribute( 'placeholder', '2000' ),
+											Field::make( 'text', 'ammount', 'Amount' )
+											->set_attribute( 'placeholder', '2000' ),
 										)
 									),
 
@@ -961,7 +971,7 @@ class Plugin {
 									Field::make( 'image', 'image', 'Image' )
 											 ->set_value_type( 'url' ),
 									Field::make( 'text', 'affiliation', 'Affiliation & Country' )
-									->set_attribute('placeholder', 'Affiliation, Country' ),
+									->set_attribute( 'placeholder', 'Affiliation, Country' ),
 									Field::make( 'rich_text', 'description', 'Bio' ),
 								)
 							)
@@ -1181,18 +1191,18 @@ class Plugin {
 		wp_register_style( 'competitions-react', CLEAD_URL . 'lib/react-competitions/build/static/main.css', array(), CLEAD_VERSION, 'all' );
 		wp_register_script( 'competitions-react', CLEAD_URL . 'lib/react-competitions/build/static/main.js', array(), CLEAD_VERSION, true );
 
-		$submit_nonce = wp_create_nonce( 'iarai-submissions-nonce' );
+		$submit_nonce     = wp_create_nonce( 'iarai-submissions-nonce' );
 		$competition_slug = get_query_var( 'compslug' );
 		$competition_zone = get_query_var( 'compzone' );
 
 		$localize_data = array(
-			'apiRoot'    => esc_url_raw( rest_url() ),
-			'appBase'    => esc_url_raw( rtrim( is_multisite() ? get_blog_details()->path : '', '/\\' ) ),
-			'appPath'    => esc_url_raw( rtrim( is_multisite() ? get_blog_details()->path : '', '/\\' ) ),
-			'appRoute'   => '/',
-			'pluginBase' => CLEAD_URL . 'lib/react-competitions/public',
-			'nonce'      => wp_create_nonce( 'wp_rest' ),
-			'nonceSubmit'      => $submit_nonce,
+			'apiRoot'     => esc_url_raw( rest_url() ),
+			'appBase'     => esc_url_raw( rtrim( is_multisite() ? get_blog_details()->path : '', '/\\' ) ),
+			'appPath'     => esc_url_raw( rtrim( is_multisite() ? get_blog_details()->path : '', '/\\' ) ),
+			'appRoute'    => '/',
+			'pluginBase'  => CLEAD_URL . 'lib/react-competitions/public',
+			'nonce'       => wp_create_nonce( 'wp_rest' ),
+			'nonceSubmit' => $submit_nonce,
 		);
 		if ( ! empty( $competition_slug ) ) {
 			$localize_data['appPath'] .= "/competition/$competition_slug";

@@ -57,7 +57,7 @@ $breadcrumb = '<div class="kleo_framework breadcrumb" itemscope="" itemtype="htt
 <span class="sep"> </span> 
 
 <span class="active" itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
-	<a itemprop="item" href="'. home_url( $competition_link ) . '" title="' . $competition_name . '">
+	<a itemprop="item" href="' . home_url( $competition_link ) . '" title="' . $competition_name . '">
 		<span itemprop="name">' . $competition_name . '</span>
 	</a>
 	<meta itemprop="position" content="2">
@@ -65,14 +65,17 @@ $breadcrumb = '<div class="kleo_framework breadcrumb" itemscope="" itemtype="htt
 
 </div>';
 
-$title_arr['title'] = ucfirst( str_replace( array( '-', '_' ), '', $zone ) );
-$title_arr['extra'] = '';
+$zone_name = str_replace( str_replace( array( 'https://', 'http://' ), '', home_url('/') ), '', $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] );
+
+
+$title_arr['title']  = ucfirst( str_replace( array( '-', '_' ), ' ', $zone_name ) );
+$title_arr['extra']  = '';
 $title_arr['output'] = "<section class='{class} border-bottom breadcrumbs-container'>
 <div class='container'>
 	{title_data}
 	<div class='breadcrumb-extra'>
-		". $breadcrumb ."{extra}
-	</div></div></section>";
+		" . $breadcrumb . '{extra}
+	</div></div></section>';
 
 
 if ( ! empty( $zone ) ) {
