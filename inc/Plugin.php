@@ -694,7 +694,7 @@ class Plugin {
 												),
 											Field::make( 'select', 'timezone', 'Timezone' )
 												->set_width( 50 )
-												->add_options( array( 'CET', 'AoE' ) ),
+												->add_options( array( 'CET' => 'CET', 'AoE' => 'AoE' ) ),
 										)
 									)
 									  ->set_header_template( ' <%- date ? date : ($_index+1) %>' ),
@@ -1210,6 +1210,7 @@ class Plugin {
 			'pluginBase'  => CLEAD_URL . 'lib/react-competitions/public',
 			'nonce'       => wp_create_nonce( 'wp_rest' ),
 			'nonceSubmit' => $submit_nonce,
+			'ajaxurl'   => admin_url( 'admin-ajax.php' ),
 		);
 		if ( ! empty( $competition_slug ) ) {
 			$localize_data['appPath'] .= "/competition/$competition_slug";
