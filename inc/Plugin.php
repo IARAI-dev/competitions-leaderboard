@@ -203,6 +203,10 @@ class Plugin {
 					array( 'contact/?$' => 'index.php?compzone=contact' ),
 					$wp_rewrite->rules
 				);
+                                $wp_rewrite->rules = array_merge(
+                                        array( 'submit/?$' => 'index.php?compzone=submit' ),
+                                        $wp_rewrite->rules
+                                );
 
 				$wp_rewrite->rules = array_merge(
 					array( 'competition\/?([a-z0-9_-]*)\/?([a-z0-9_-]*)$' => 'index.php?compage=competition&compslug=$matches[1]&compzone=$matches[2]' ),
