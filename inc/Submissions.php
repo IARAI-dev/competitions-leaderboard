@@ -139,7 +139,7 @@ class Submissions {
 
 		if ( $limit && (int) $limit > 0 ) {
 
-			$submissions = self::get_submissions( $competition, null, $challenge, $leaderboard );
+			$submissions = self::get_submissions( $competition, get_current_user_id(), $challenge, $leaderboard );
 
 			if ( $submissions ) {
 				$total_submissions = count( $submissions );
@@ -359,7 +359,7 @@ class Submissions {
 		$item    = (int) $_POST['item_id'];
 
 		if ( isset( $_POST['action'] ) && $_POST['action'] === 'iarai_delete_submission' ) {
-			$submissions = self::get_submissions();
+			$submissions = self::get_submissions(null, get_current_user_id());
 
 			foreach ( $submissions as $k => $submission ) {
 				if ( $submission->ID == $item ) {
@@ -451,10 +451,6 @@ class Submissions {
 	 * @return bool|\WP_Post[]
 	 */
 	public static function get_submissions( $competition = null, $user_id = null, $challenge = null, $leaderboard = null ) {
-
-		if ( $user_id === null && is_user_logged_in() ) {
-			$user_id = get_current_user_id();
-		}
 
 		$args = [
 			'post_status'    => 'publish',

@@ -104,7 +104,7 @@ if ( function_exists( 'kleo_switch_layout' ) ) {
             <div id="my-submissions" class="hr-title hr-full hr-left"><abbr>My submissions</abbr></div>
 
 			<?php
-			$submissions = \CLead\Submissions::get_submissions( $competition );
+			$submissions = \CLead\Submissions::get_submissions( $competition, get_current_user_id() );
 
             echo '<!-- '.  count( $submissions ) .'-->';
 			if ( $submissions && count( $submissions ) > 0 ) {
