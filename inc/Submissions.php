@@ -456,16 +456,15 @@ class Submissions {
 			$user_id = get_current_user_id();
 		}
 
-		if ( $user_id === null ) {
-			return false;
-		}
-
 		$args = [
 			'post_status'    => 'publish',
 			'posts_per_page' => - 1,
 			'post_type'      => 'submission',
-			'author'         => $user_id,
 		];
+
+		if ( $user_id ) {
+			$args['author'] = $user_id;
+		}
 
 		$args['tax_query'] = [];
 
