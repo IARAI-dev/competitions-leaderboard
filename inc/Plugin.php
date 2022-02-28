@@ -308,13 +308,20 @@ class Plugin {
 		$data = array();
 
 		foreach ( $terms as $term ) {
-			$link_prefix = carbon_get_term_meta( $term->term_id, 'competition_is_v2' ) ? 'competition/' : 'competitions/';
+			$link = 'competition/' . $term->slug;
+
+			$v2 = carbon_get_term_meta( $term->term_id, 'competition_is_v2' );
+			$old_link = carbon_get_term_meta( $term->term_id, 'competition_old_link' );
+			
+			if ( $v2 && $old_link ) {
+				$link = $old_link;
+			}
 
 			$data[] = array(
 				'id'   => $term->term_id,
 				'name' => $term->name,
 				'slug' => $term->slug,
-				'link' => $link_prefix . $term->slug,
+				'link' => $link,
 			);
 		}
 
@@ -551,12 +558,10 @@ class Plugin {
 
 						Field::make( 'image', 'competition_logo', 'Competition Logo' )
 							 ->set_value_type( 'url' )
-							 ->set_width( 50 )
-							 ->set_required( true ),
+							 ->set_width( 50 ),
 						Field::make( 'image', 'competition_main_bg_image', 'Background image' )
 							 ->set_value_type( 'url' )
-							 ->set_width( 50 )
-							 ->set_required( true ),
+							 ->set_width( 50 ),
 
 						Field::make( 'rich_text', 'competition_main_short_description', 'Short description' )
 							 ->set_attribute( 'maxLength', 1500 )
@@ -923,8 +928,9 @@ class Plugin {
 				->add_tab(
 					__( 'Connect' ),
 					array(
-						Field::make( 'text', 'competition_connect_forum', 'Forum link' ),
-						Field::make( 'text', 'competition_connect_contact', 'Contact email' ),
+						// Field::make( 'text', 'competition_connect_forum', 'Forum link' ),
+						Field::make( 'text', 'competition_connect_contact', 'Contact email' )
+						->set_attribute( 'placeholder', 'traffic4cast@iarai.ac.at' ),
 						Field::make( 'complex', 'competition_connect_scientific_committee', 'Scientific Committee' )
 							 ->set_layout( 'tabbed-horizontal' )
 							 ->set_min( 1 )
@@ -1010,6 +1016,17 @@ class Plugin {
 						Field::make( 'checkbox', 'competition_is_v2', 'New template' )
 						->set_default_value( 'yes' )
 							 ->set_help_text( 'Is this using the new 2.0 template?' ),
+						Field::make( 'text', 'competition_old_link', 'Old link to competition' )
+						->set_conditional_logic(
+							array(
+								array(
+									'field'   => 'competition_is_v2',
+									'value'   => 'yes',
+									'compare' => '!=',
+								),
+							)
+						),
+
 						Field::make( 'rich_text', 'competition_pre_text', 'Before Text(Deprecated)' ),
 						Field::make( 'select', 'competition_leaderboard', 'Enable Leaderboard' )
 							->add_options(

@@ -1,7 +1,7 @@
 <?php
 /**
  * Template Name: Competition page
- * 
+ *
  * @package WordPress
  * @subpackage Kleo
  * @author SeventhQueen <themesupport@seventhqueen.com>
@@ -10,9 +10,11 @@
 
 $competition_name = '';
 $competition_slug = get_query_var( 'compslug' );
+$competition_link = '';
 
 if ( ! empty( $competition_slug ) && get_term_by( 'slug', $competition_slug, 'competition' ) ) {
 	$competition_name = get_term_by( 'slug', $competition_slug, 'competition' )->name;
+	$competition_link = 'competition/' . $competition_slug;
 } else {
 	$args = array(
 		'taxonomy'   => 'competition',
@@ -23,12 +25,13 @@ if ( ! empty( $competition_slug ) && get_term_by( 'slug', $competition_slug, 'co
 
 	$terms = get_terms( $args );
 
-	if ( !  empty( $terms ) ) {
+	if ( ! empty( $terms ) ) {
 		$competition_name = $terms[0]->name;
+		$competition_slug = $terms[0]->slug;
 	}
 }
 
-$zone = get_query_var( 'compzone' );
+$zone      = get_query_var( 'compzone' );
 $title_arr = array();
 
 if ( empty( $zone ) ) {
@@ -43,12 +46,37 @@ get_header(); ?>
 kleo_switch_layout( 'no' );
 add_filter( 'kleo_main_container_class', 'kleo_ret_full_container' );
 
+$breadcrumb = '<div class="kleo_framework breadcrumb" itemscope="" itemtype="http://schema.org/BreadcrumbList">
+<span itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
+	<a itemprop="item" href="https://www.iarai.ac.at" title="IARAI">
+		<span itemprop="name">Home</span>
+	</a>
+	<meta itemprop="position" content="1">
+</span>
 
-$title_arr['title'] = $competition_name;
+<span class="sep"> </span> 
+
+<span class="active" itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
+	<a itemprop="item" href="'. home_url( $competition_link ) . '" title="' . $competition_name . '">
+		<span itemprop="name">' . $competition_name . '</span>
+	</a>
+	<meta itemprop="position" content="2">
+</span>
+
+</div>';
+
+$title_arr['title'] = ucfirst( str_replace( array( '-', '_' ), '', $zone ) );
 $title_arr['extra'] = '';
+$title_arr['output'] = "<section class='{class} border-bottom breadcrumbs-container'>
+<div class='container'>
+	{title_data}
+	<div class='breadcrumb-extra'>
+		". $breadcrumb ."{extra}
+	</div></div></section>";
+
 
 if ( ! empty( $zone ) ) {
-    echo kleo_title_section($title_arr);
+	echo kleo_title_section( $title_arr );
 }
 
 ?>
