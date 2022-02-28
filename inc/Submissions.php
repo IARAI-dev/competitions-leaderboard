@@ -320,6 +320,7 @@ class Submissions {
 			//Delete previous post and data
 			wp_delete_post( $pid );
 
+			header('HTTP/1.1 401 Unauthorized');
 			echo wp_json_encode( [ 'errors' => $errors ] );
 		} else {
 

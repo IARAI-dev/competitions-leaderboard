@@ -801,6 +801,8 @@ class Plugin {
 									),
 									Field::make( 'text', 'external_submission', 'Submission of other files' )
 										->set_help_text( 'Link to submit' ),
+									Field::make( 'text', 'external_submission_type', 'Submission Type' )
+										->set_attribute( 'placeholder', 'Abstract' ),
 
 									Field::make( 'complex', 'competition_leaderboards', 'Leaderboards' )
 									->set_conditional_logic(
