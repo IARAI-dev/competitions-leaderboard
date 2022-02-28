@@ -67,25 +67,17 @@ class Plugin {
 					return;
 				}
 
-				if ( ! has_shortcode( $post->post_content, 'competitions_app' ) ) {
+				$competition      = get_query_var( 'compage' );
+				$competition_zone = get_query_var( 'compzone' );
+
+				if ( ! has_shortcode( $post->post_content, 'competitions_app' ) && ! $competition && ! $competition_zone ) {
 					return;
 				}
 
 				// Remove existing header
-				if ( is_home() || is_front_page() ) {
+				if ( has_shortcode( $post->post_content, 'competitions_app' ) ) {
 					remove_action( 'kleo_header', 'kleo_show_header' );
 				}
-
-				// Disable sticky header
-				add_filter(
-					'body_class',
-					function( $class ) {
-						if ( ( $key = array_search( 'kleo-navbar-fixed', $class ) ) !== false ) {
-							unset( $class[ $key ] );
-						}
-						return $class;
-					}
-				);
 
 				// set logo back to regular one
 				remove_all_filters( 'kleo_logo_href', 10 );
@@ -210,7 +202,7 @@ class Plugin {
 		add_action(
 			'template_redirect',
 			function() {
-				$competition = get_query_var( 'compage' );
+				$competition      = get_query_var( 'compage' );
 				$competition_zone = get_query_var( 'compzone' );
 
 				if ( $competition_zone || $competition ) {
@@ -229,8 +221,19 @@ class Plugin {
 
 		remove_action( 'kleo_header', array( $this, 'main_site_header' ), 9 );
 
-		delete_transient( 'main_page_header' );
+		// delete_transient( 'main_page_header' );
+
+		$replace_class = 'alternate-color competition-main-site';
+		$competition_zone = get_query_var( 'compzone' );
+
+
 		if ( $header = get_transient( 'main_page_header' ) ) {
+
+			// disable sticky
+			if( ! empty( $competition_zone ) ) {
+				$header = str_replace( $replace_class, $replace_class . ' disable-sticky', $header );
+			}
+
 			echo $header;
 			return;
 		}
@@ -249,9 +252,15 @@ class Plugin {
 
 		$div = $div->item( 0 );
 		$div = $dom->saveHTML( $div );
-		$div = str_replace( 'class="header-color"', 'class="alternate-color competition-main-site"', $div );
+
+		$div = str_replace( 'class="header-color"', 'class="' .  $replace_class . '"', $div );
 
 		set_transient( 'main_page_header', $div, 60 * 60 );
+
+		// disable sticky
+		if( ! empty( $competition_zone ) ) {
+			$div = str_replace( $replace_class, $replace_class . ' disable-sticky', $div );
+		}
 
 		echo $div;
 
@@ -324,14 +333,19 @@ class Plugin {
 			'meta_value' => 'yes',
 		);
 
+		if ( isset( $_GET['competition'] ) && ! empty( $_GET['competition'] ) ) {
+			$current_competition = sanitize_text_field( $_GET['competition'] );
+			unset( $args['meta_key'] );
+			unset( $args['meta_value'] );
+		}
+
 		$terms = get_terms( $args );
 
 		if ( empty( $terms ) ) {
 			return new \WP_REST_Response( array( 'error' => 'Nothing here' ), 404 );
 		}
 
-		if ( isset( $_GET['competition'] ) && ! empty( $_GET['competition'] ) ) {
-			$current_competition = sanitize_text_field( $_GET['competition'] );
+		if ( isset( $current_competition ) ) {
 			foreach ( $terms as $term ) {
 				if ( $term->slug === $current_competition ) {
 					$competition = $term;
@@ -511,7 +525,7 @@ class Plugin {
 						Field::make( 'checkbox', 'competition_is_main', 'Current competition' )
 							 ->set_help_text( 'Is this the current competition?' ),
 
-						Field::make( 'checkbox', 'competition_is_public', 'Public competition' )
+						Field::make( 'checkbox', 'competition_is_public', 'Public/Internal competition' )
 							 ->set_help_text( 'Is the competition available to the public or just for logged in users' ),
 
 						Field::make( 'text', 'competition_main_long_name', 'Competition long name' )
@@ -527,7 +541,7 @@ class Plugin {
 							 ->set_width( 50 )
 							 ->set_required( true ),
 
-						Field::make( 'textarea', 'competition_main_short_description', 'Short description' )
+						Field::make( 'rich_text', 'competition_main_short_description', 'Short description' )
 							 ->set_attribute( 'maxLength', 1500 )
 							 ->set_help_text( 'Max 1500 characters' )
 							 ->set_required( true ),
@@ -563,14 +577,14 @@ class Plugin {
 				->add_tab(
 					__( 'Competition' ),
 					array(
-						Field::make( 'textarea', 'competition_long_description', 'Long description' )
+						Field::make( 'rich_text', 'competition_long_description', 'Long description' )
 							 ->set_attribute( 'maxLength', 2500 )
 							 ->set_help_text( 'Max 2500 characters' ),
 
 						Field::make( 'image', 'competition_secondary_image', 'Secondary image' )
 							 ->set_value_type( 'url' ),
 
-						Field::make( 'textarea', 'competition_data_description', 'Data description' )
+						Field::make( 'rich_text', 'competition_data_description', 'Data description' )
 							 ->set_attribute( 'maxLength', 2500 )
 							 ->set_help_text( 'Max 2500 characters' ),
 
@@ -602,7 +616,7 @@ class Plugin {
 										 ->set_help_text( 'Max 80 characters' )
 										 ->set_attribute( 'placeholder', 'IEEE Big Data - Stage 1 (challenge 2 would be IEEE Big Data - Stage 2)' ),
 
-									Field::make( 'textarea', 'description', 'Challenge description' )
+									Field::make( 'rich_text', 'description', 'Challenge description' )
 										 ->set_attribute( 'maxLength', 1500 )
 										 ->set_help_text( 'Max 1500 characters' ),
 
@@ -658,7 +672,7 @@ class Plugin {
 										->set_max( 3 )
 									->add_fields(
 										array(
-											Field::make( 'textarea', 'prize', 'Prize' )
+											Field::make( 'rich_text', 'prize', 'Prize' )
 												 ->set_default_value( 'Voucher or cash prize worth {AMOUNT}EUR to the participant/team and one free {CONFERENCE NAME AND YEAR} conference registration' )
 												 ->set_attribute( 'maxLength', 200 )
 												 ->set_help_text( 'Max 200 characters' ),
@@ -680,13 +694,16 @@ class Plugin {
 										)
 									)
 										->set_layout( 'tabbed-horizontal' )
-										->set_min( 1 )
-										->set_max( 3 )
+
 									->add_fields(
 										array(
-											Field::make( 'textarea', 'prize', 'Prize' )
+											Field::make( 'text', 'name', 'Name' )
+											->set_attribute( 'placeholder', 'For a surprising, pure network-theoretical solution' ),
+											Field::make( 'text', 'prize', 'Prize' )
 												 ->set_attribute( 'maxLength', 200 )
 												 ->set_help_text( 'Max 200 characters' ),
+												 Field::make( 'text', 'ammount', 'Amount' )
+												 ->set_attribute( 'placeholder', '2000' ),
 										)
 									),
 
@@ -920,8 +937,9 @@ class Plugin {
 									Field::make( 'text', 'name', 'Name' ),
 									Field::make( 'image', 'image', 'Image' )
 											 ->set_value_type( 'url' ),
-									Field::make( 'text', 'affiliation', 'Affiliation & Country' ),
-									Field::make( 'textarea', 'description', 'Bio' ),
+									Field::make( 'text', 'affiliation', 'Affiliation & Country' )
+									->set_attribute('placeholder', 'Affiliation, Country' ),
+									Field::make( 'rich_text', 'description', 'Bio' ),
 								)
 							)
 							 ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
@@ -953,7 +971,7 @@ class Plugin {
 									Field::make( 'text', 'name', 'Name' ),
 									Field::make( 'image', 'image', 'Image' )
 											 ->set_value_type( 'url' ),
-									Field::make( 'textarea', 'description', 'Bio' ),
+									Field::make( 'rich_text', 'description', 'Bio' ),
 								)
 							)
 							 ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
@@ -1129,15 +1147,29 @@ class Plugin {
 		wp_register_style( 'competitions-react', CLEAD_URL . 'lib/react-competitions/build/static/main.css', array(), CLEAD_VERSION, 'all' );
 		wp_register_script( 'competitions-react', CLEAD_URL . 'lib/react-competitions/build/static/main.js', array(), CLEAD_VERSION, true );
 
+		$competition_slug = get_query_var( 'compslug' );
+		$competition_zone = get_query_var( 'compzone' );
+
+		$localize_data = array(
+			'apiRoot'    => esc_url_raw( rest_url() ),
+			'appBase'    => esc_url_raw( rtrim( is_multisite() ? get_blog_details()->path : '', '/\\' ) ),
+			'appPath'    => esc_url_raw( rtrim( is_multisite() ? get_blog_details()->path : '', '/\\' ) ),
+			'appRoute'   => '/',
+			'pluginBase' => CLEAD_URL . 'lib/react-competitions/public',
+			'nonce'      => wp_create_nonce( 'wp_rest' ),
+		);
+		if ( ! empty( $competition_slug ) ) {
+			$localize_data['appPath'] .= "/competition/$competition_slug";
+		}
+
+		if ( ! empty( $competition_zone ) ) {
+			$localize_data['appRoute'] .= $competition_zone;
+		}
+
 		wp_localize_script(
 			'competitions-react',
 			'wpApiSettings',
-			array(
-				'apiRoot'    => esc_url_raw( rest_url() ),
-				'appBase'    => esc_url_raw( rtrim( is_multisite() ? get_blog_details()->path : '', '/\\' ) ),
-				'pluginBase' => CLEAD_URL . 'lib/react-competitions/public',
-				'nonce'      => wp_create_nonce( 'wp_rest' ),
-			)
+			$localize_data
 		);
 
 		wp_register_script( 'iarai-submissions', CLEAD_URL . 'assets/js/submissions.js', array( 'jquery' ), false, true );

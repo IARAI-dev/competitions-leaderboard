@@ -8,8 +8,6 @@
  * @since Kleo 1.0
  */
 
-use CLead\Plugin;
-
 $competition_name = '';
 $competition_slug = get_query_var( 'compslug' );
 
