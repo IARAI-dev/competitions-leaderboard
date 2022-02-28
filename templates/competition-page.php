@@ -8,6 +8,8 @@
  * @since Kleo 1.0
  */
 
+use CLead\Plugin;
+
 $competition_name = '';
 $competition_slug = get_query_var( 'compslug' );
 $competition_link = '';
@@ -37,6 +39,8 @@ $title_arr = array();
 if ( empty( $zone ) ) {
 	remove_action( 'kleo_header', 'kleo_show_header' );
 }
+add_action( 'kleo_header', array( Plugin::instance(), 'main_site_header' ), 9 );
+
 
 get_header(); ?>
 
@@ -68,7 +72,7 @@ $breadcrumb = '<div class="kleo_framework breadcrumb" itemscope="" itemtype="htt
 $zone_name = str_replace( str_replace( array( 'https://', 'http://' ), '', home_url('/') ), '', $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] );
 
 
-$title_arr['title']  = ucfirst( str_replace( array( '-', '_' ), ' ', $zone_name ) );
+$title_arr['title']  = ucfirst( str_replace( array( '-', '_', '/' ), ' ', $zone_name ) );
 $title_arr['extra']  = '';
 $title_arr['output'] = "<section class='{class} border-bottom breadcrumbs-container'>
 <div class='container'>

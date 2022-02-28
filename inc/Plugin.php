@@ -8,6 +8,15 @@ use IARAI\Logging;
 
 class Plugin {
 
+	protected static $instance = null;
+
+	public static function instance() {
+		if ( is_null( self::$instance ) ) {
+			self::$instance = new Plugin();
+		}
+		return self::$instance;
+	}
+
 	/**
 	 * @var array
 	 */
@@ -232,9 +241,7 @@ class Plugin {
 
 	public function main_site_header() {
 
-		remove_action( 'kleo_header', array( $this, 'main_site_header' ), 9 );
-
-		delete_transient( 'main_page_header' );
+		//delete_transient( 'main_page_header' );
 
 		$replace_class    = 'alternate-color competition-main-site';
 		$competition_zone = get_query_var( 'compzone' );

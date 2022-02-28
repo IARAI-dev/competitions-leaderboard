@@ -33,4 +33,4 @@ if ( ! isset( $GLOBALS['wp_logs'] ) && ! class_exists( '\IARAI\Logging' ) ) {
 }
 
 require_once CLEAD_PATH . 'inc/Plugin.php';
-new \Clead\Plugin();
+\Clead\Plugin::instance();
