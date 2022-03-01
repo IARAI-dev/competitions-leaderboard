@@ -458,7 +458,7 @@ class Submissions {
 			'post_type'      => 'submission',
 		];
 
-		if ( $user_id ) {
+		if ( isset( $user_id ) ) {
 			$args['author'] = $user_id;
 		}
 
