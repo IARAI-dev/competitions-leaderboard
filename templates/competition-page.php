@@ -39,12 +39,6 @@ if ( ! empty( $competition_slug ) && get_term_by( 'slug', $competition_slug, 'co
 $zone_name = str_replace( str_replace( array( 'https://', 'http://' ), '', home_url( '/' ) ), '', $_SERVER['HTTP_HOST'] . explode( '?', $_SERVER['REQUEST_URI'], 2 )[0] );
 $zone_name = ltrim( str_replace( $competition_link, '', $zone_name ), '/' );
 
-// Add main site header.
-add_action( 'kleo_header', array( Plugin::instance(), 'main_site_header' ), 9 );
-
-// Set logo back to regular one. This is filtered in the iarai-dev/loader.php.
-remove_all_filters( 'kleo_logo_href', 10 );
-
 // If on homepage. Remove site header.
 if ( empty( $zone ) ) {
 	remove_action( 'kleo_header', 'kleo_show_header' );

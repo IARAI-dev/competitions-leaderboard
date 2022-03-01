@@ -217,8 +217,22 @@ class Plugin {
 			}
 		);
 
+		add_action( 'wp', [ $this, 'general_layout_changes' ] );
 	}
 
+	public function general_layout_changes() {
+
+		if ( ! is_multisite() ) {
+			return;
+		}
+
+		// Replace header with main site header
+		add_action( 'kleo_header', array( $this, 'main_site_header' ), 9 );
+
+		// set logo back to regular one
+		remove_all_filters( 'kleo_logo_href', 10 );
+
+	}
 
 	public function main_site_header() {
 
