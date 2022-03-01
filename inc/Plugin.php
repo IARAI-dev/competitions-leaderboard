@@ -217,7 +217,7 @@ class Plugin {
 			}
 		);
 
-		add_action( 'wp', [ $this, 'general_layout_changes' ] );
+		add_action( 'wp', array( $this, 'general_layout_changes' ) );
 	}
 
 	public function general_layout_changes() {
@@ -1222,7 +1222,7 @@ class Plugin {
 			'nonce'       => wp_create_nonce( 'wp_rest' ),
 			'nonceSubmit' => $submit_nonce,
 			'ajaxurl'     => admin_url( 'admin-ajax.php' ),
-			'loggedIn' => is_user_logged_in(),
+			'loggedIn'    => is_user_logged_in(),
 		);
 		if ( ! empty( $competition_slug ) ) {
 			$localize_data['appPath'] .= "/competition/$competition_slug";
@@ -1653,8 +1653,9 @@ class Plugin {
 					}
 
 					$result[] = array(
+						'name'            => $submission->post_name,
 						'id'              => $submission->ID,
-						'name'            => $name,
+						'team'            => $name,
 						'score'           => self::get_score_number( $submission->ID ),
 						'date'            => get_the_date( 'Y-m-d H:i', $submission->ID ),
 						'log'             => isset( $user ) ? $log : '',
