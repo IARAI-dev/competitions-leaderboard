@@ -1463,7 +1463,7 @@ class Plugin {
 			}
 		);
 
-		return '<div id="competitions-wrap"></div>';
+		return '<div id="competitions-wrap" class="container"></div>';
 
 	}
 
