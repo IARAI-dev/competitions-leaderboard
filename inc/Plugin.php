@@ -1208,6 +1208,7 @@ class Plugin {
 			'nonce'       => wp_create_nonce( 'wp_rest' ),
 			'nonceSubmit' => $submit_nonce,
 			'ajaxurl'     => admin_url( 'admin-ajax.php' ),
+			'loggedIn' => is_user_logged_in(),
 		);
 		if ( ! empty( $competition_slug ) ) {
 			$localize_data['appPath'] .= "/competition/$competition_slug";
