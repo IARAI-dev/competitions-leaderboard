@@ -142,27 +142,27 @@ class Plugin {
 		add_filter(
 			'generate_rewrite_rules',
 			function ( $wp_rewrite ) {
-				$wp_rewrite->rules                 = array_merge(
+				$wp_rewrite->rules = array_merge(
 					array( 'events/?$' => 'index.php?compzone=events' ),
 					$wp_rewrite->rules
 				);
-				$wp_rewrite->rules                 = array_merge(
+				$wp_rewrite->rules = array_merge(
 					array( 'challenge/?$' => 'index.php?compzone=challenge' ),
 					$wp_rewrite->rules
 				);
-				$wp_rewrite->rules                 = array_merge(
+				$wp_rewrite->rules = array_merge(
 					array( 'connect/?$' => 'index.php?compzone=connect' ),
 					$wp_rewrite->rules
 				);
-				$wp_rewrite->rules                 = array_merge(
+				$wp_rewrite->rules = array_merge(
 					array( 'organising-committee/?$' => 'index.php?compzone=orgcommittee' ),
 					$wp_rewrite->rules
 				);
-				$wp_rewrite->rules                 = array_merge(
+				$wp_rewrite->rules = array_merge(
 					array( 'scientific-committee/?$' => 'index.php?compzone=scicommittee' ),
 					$wp_rewrite->rules
 				);
-				$wp_rewrite->rules                 = array_merge(
+				$wp_rewrite->rules = array_merge(
 					array( 'contact/?$' => 'index.php?compzone=contact' ),
 					$wp_rewrite->rules
 				);
@@ -241,8 +241,6 @@ class Plugin {
 				// Prevent duplicate header id
 				$header = str_replace( 'id="header"', 'id="header-main-site"', $header );
 			}
-
-			
 
 			echo $header;
 			return;
@@ -1191,7 +1189,7 @@ class Plugin {
 
 	public function enqueue_scripts() {
 
-		//general styles
+		// general styles
 		wp_enqueue_style( 'competitions', CLEAD_URL . 'assets/css/competition.css', array(), CLEAD_VERSION, 'all' );
 
 		wp_register_style( 'competitions-react', CLEAD_URL . 'lib/react-competitions/build/static/main.css', array(), CLEAD_VERSION, 'all' );
@@ -1619,7 +1617,7 @@ class Plugin {
 				$submissions = Submissions::get_submissions( $competition, $user, $challenge, $leaderboard );
 
 				if ( empty( $submissions ) ) {
-					wp_send_json_success( array( 'results' => [] ), 200 );
+					wp_send_json_success( array( 'results' => array() ), 200 );
 					exit;
 				}
 
@@ -1640,10 +1638,11 @@ class Plugin {
 					}
 
 					$result[] = array(
+						'id'              => $submission->ID,
 						'name'            => $name,
 						'score'           => self::get_score_number( $submission->ID ),
 						'date'            => get_the_date( 'Y-m-d H:i', $submission->ID ),
-						'log'           => isset( $user ) ? $log : '',
+						'log'             => isset( $user ) ? $log : '',
 						'notes'           => isset( $user ) ? $notes : '',
 						'is_current_user' => $is_current_user,
 					);
