@@ -1610,7 +1610,7 @@ class Plugin {
 				$leaderboard = sanitize_text_field( $_POST['leaderboard'] );
 
 				$user = null;
-				if ( isset( $_POST['current_user'] ) && $_POST['current_user'] ) {
+				if ( isset( $_POST['current_user'] ) && (int) $_POST['current_user'] !== 0 ) {
 					$user = get_current_user_id();
 				}
 
