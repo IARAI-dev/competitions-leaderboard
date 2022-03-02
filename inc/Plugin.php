@@ -718,7 +718,7 @@ class Plugin {
 									->add_fields(
 										array(
 											Field::make( 'rich_text', 'prize', 'Prize' )
-												 ->set_default_value( 'Voucher or cash prize worth {AMOUNT}EUR to the participant/team and one free {CONFERENCE NAME AND YEAR} conference registration' )
+												 ->set_default_value( 'Voucher or cash prize worth {AMOUNT} EUR to the participant/team and one free {CONFERENCE NAME AND YEAR} conference registration' )
 												 ->set_attribute( 'maxLength', 200 )
 												 ->set_help_text( 'Max 200 characters' ),
 											Field::make( 'text', 'amount', 'Prize amount' )
@@ -743,12 +743,13 @@ class Plugin {
 									->add_fields(
 										array(
 											Field::make( 'text', 'name', 'Name' )
-											->set_attribute( 'placeholder', 'For a surprising, pure network-theoretical solution' ),
+											        ->set_default_value( 'For a surprising, pure network-theoretical solution' ),
 											Field::make( 'text', 'prize', 'Prize' )
 												 ->set_attribute( 'maxLength', 200 )
-												 ->set_help_text( 'Max 200 characters' ),
-											Field::make( 'text', 'ammount', 'Amount' )
-											->set_attribute( 'placeholder', '2000' ),
+												 ->set_help_text( 'Max 200 characters' )
+                                                                                                 ->set_default_value('Voucher or cash prize of {AMOUNT} EUR'),
+											Field::make( 'text', 'amount', 'Amount' )
+                                                                                                 ->set_default_value('2000'),
 										)
 									),
 
