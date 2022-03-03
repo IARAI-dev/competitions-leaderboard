@@ -1,0 +1,12 @@
+.taxonomy-competition .wp-media-buttons {
+    display: none !important;   
+}
+.taxonomy-competition .cf-complex .cf-complex  {
+    background: #f3f3f3;
+    margin-bottom: 20px;
+}
+
+.taxonomy-competition .cf-complex .cf-complex .cf-complex {
+    background: #fff;
+    margin-bottom: 0;
+}

@@ -14,15 +14,15 @@ class Submissions {
 	private $filename = null;
 
 	private $competition = '';
-	private $challenge = '';
+	private $challenge   = '';
 	private $leaderboard = '';
 
 	public function __construct() {
 
-		add_action( 'wp_ajax_iarai_file_upload', [ $this, 'iarai_file_upload' ] );
+		add_action( 'wp_ajax_iarai_file_upload', array( $this, 'iarai_file_upload' ) );
 		// add_action( 'wp_ajax_nopriv_iarai_file_upload', [ $this, 'iarai_file_upload' ] );
-		add_action( 'wp_ajax_iarai_delete_submission', [ $this, 'ajax_delete_submission' ] );
-		add_action( 'before_delete_post', [ $this, 'delete_submission_files' ] );
+		add_action( 'wp_ajax_iarai_delete_submission', array( $this, 'ajax_delete_submission' ) );
+		add_action( 'before_delete_post', array( $this, 'delete_submission_files' ) );
 	}
 
 
@@ -36,15 +36,15 @@ class Submissions {
 		}
 
 		// Save new submissions && get ID
-		$errors = [];
+		$errors = array();
 
-		if ( isset ( $_POST['title'] ) && '' != $_POST['title'] ) {
+		if ( isset( $_POST['title'] ) && '' != $_POST['title'] ) {
 			$title = $_POST['title'];
 		} else {
 			$errors['title'] = 'Please enter a submission name';
 		}
 
-		if ( isset ( $_POST['competition'] ) && '' != $_POST['competition'] ) {
+		if ( isset( $_POST['competition'] ) && '' != $_POST['competition'] ) {
 			$competition = $_POST['competition'];
 		} else {
 			$errors['competition'] = 'Please select a competition';
@@ -68,7 +68,7 @@ class Submissions {
 
 		if ( ! is_user_logged_in() && $submission_option === 'guests' ) {
 
-			if ( ! isset ( $_POST['email'] ) || empty( $_POST['email'] ) ) {
+			if ( ! isset( $_POST['email'] ) || empty( $_POST['email'] ) ) {
 				$errors['email'] = 'Please enter your email';
 			} else {
 				$email = sanitize_text_field( $_POST['email'] );
@@ -89,7 +89,7 @@ class Submissions {
 
 		// Intermediate stop to ensure basic data is set
 		if ( ! empty( $errors ) ) {
-			echo wp_json_encode( [ 'errors' => $errors ] );
+			echo wp_json_encode( array( 'errors' => $errors ) );
 			exit;
 		}
 		$this->user = get_user_by( 'id', $user_id );
@@ -103,8 +103,8 @@ class Submissions {
 			$challenge   = sanitize_text_field( $_POST['challenge'] );
 			$leaderboard = sanitize_text_field( $_POST['leaderboard'] );
 
-			$challenge_data   = [];
-			$leaderboard_data = [];
+			$challenge_data   = array();
+			$leaderboard_data = array();
 
 			$competition_challenges = carbon_get_term_meta( $competition, 'competition_challenges' );
 
@@ -136,7 +136,6 @@ class Submissions {
 			$limit = get_term_meta( $competition, '_competition_limit_submit', true );
 		}
 
-
 		if ( $limit && (int) $limit > 0 ) {
 
 			$submissions = self::get_submissions( $competition, get_current_user_id(), $challenge, $leaderboard );
@@ -146,7 +145,7 @@ class Submissions {
 
 				if ( $total_submissions >= (int) $limit ) {
 					$errors['general'] = '<div class="alert alert-warning">You have exceeded the total submissions limit! Please remove existing submissions so you can add new ones.</div>';
-					echo wp_json_encode( [ 'errors' => $errors ] );
+					echo wp_json_encode( array( 'errors' => $errors ) );
 					exit;
 				}
 			}
@@ -156,25 +155,34 @@ class Submissions {
 			$errors['file'] = 'You need to submit a file for this competition';
 		}
 
-		// Check file upload
+		// Check file upload.
 		$uploaded_file = $_FILES['file'];
 		$file_type     = explode( '.', $uploaded_file['name'] );
 		$file_type     = strtolower( $file_type[ count( $file_type ) - 1 ] );
 
-		//Get allowed file extensions
-		if ( ! empty( $leaderboard_data ) ) {
+		// Get allowed file extensions.
+
+		// v2.0.
+		if ( ! empty( $leaderboard_data )	 ) {
 			$extension_restrict = $leaderboard_data['competition_file_types'];
+
+			if ( $extension_restrict === 'custom' ) {
+				$extension_restrict = $leaderboard_data['competition_file_types_custom'];
+			}
+			$extension_restrict = (array) $extension_restrict;
 		} else {
+
+			// older settings.
 			$extension_restrict = get_term_meta( $competition, '_competition_file_types', true );
+
+			if ( $extension_restrict && '' !== $extension_restrict ) {
+				$extension_restrict = explode( ',', $extension_restrict );
+				$extension_restrict = array_map( 'trim', $extension_restrict );
+			}
 		}
 
-		if ( $extension_restrict && '' !== $extension_restrict ) {
-			$extension_restrict = explode( ',', $extension_restrict );
-			$extension_restrict = array_map( 'trim', $extension_restrict );
-
-			if ( ! in_array( $file_type, $extension_restrict ) ) {
-				$errors['file'] = 'Your uploaded file type is not allowed.';
-			}
+		if ( ! empty( $extension_restrict ) && ! in_array( $file_type, $extension_restrict ) ) {
+			$errors['file'] = 'Your uploaded file type is not allowed.';
 		}
 
 		if ( empty( $errors ) ) {
@@ -184,10 +192,10 @@ class Submissions {
 				'post_author'  => $this->user->ID,
 				'post_content' => '',
 				'post_status'  => 'publish',
-				'post_type'    => 'submission'  // Use a custom post type if you want to
+				'post_type'    => 'submission',  // Use a custom post type if you want to
 			);
 
-			//save the new post and return its ID
+			// save the new post and return its ID
 			$pid = wp_insert_post( $new_post );
 
 			$this->competition = $competition;
@@ -198,21 +206,21 @@ class Submissions {
 			}
 
 			// Actually try to upload the file
-			add_filter( 'upload_dir', [ $this, 'change_upload_dir' ] );
-			$upload_overrides = [
+			add_filter( 'upload_dir', array( $this, 'change_upload_dir' ) );
+			$upload_overrides = array(
 				'action'                   => 'iarai_file_upload',
 				'test_type'                => false,
-				'unique_filename_callback' => [ $this, 'custom_filename' ]
-			];
+				'unique_filename_callback' => array( $this, 'custom_filename' ),
+			);
 
-			require_once( ABSPATH . 'wp-admin/includes/file.php' );
+			require_once ABSPATH . 'wp-admin/includes/file.php';
 			$data_file = wp_handle_upload( $uploaded_file, $upload_overrides );
 
 			// For log
 			$user    = wp_get_current_user();
 			$parent  = 0;
 			$type    = 'submission';
-			$types   = [ $type ];
+			$types   = array( $type );
 			$tag_log = get_term_meta( $competition, '_competition_log_tag', true );
 
 			if ( $tag_log ) {
@@ -242,19 +250,18 @@ class Submissions {
 
 							// Team and pass match
 							if ( $existing_pass && $existing_pass == $pass ) {
-								wp_set_post_terms( $pid, [ $existing_team->term_id ], 'team' );
+								wp_set_post_terms( $pid, array( $existing_team->term_id ), 'team' );
 							} else {
 								$errors['pass'] = 'This team already exists but the password doesn\'t match.' .
-								                  'Please retry entering the correct password or pick a different team name.';
+												  'Please retry entering the correct password or pick a different team name.';
 							}
 						} else {
 							// New team.
 							$new_team = wp_insert_term( $team, 'team' );
 							add_term_meta( $new_team['term_id'], '_team_pass', $pass, true );
 
-							wp_set_post_terms( $pid, [ $new_team['term_id'] ], 'team' );
+							wp_set_post_terms( $pid, array( $new_team['term_id'] ), 'team' );
 						}
-
 					} else {
 						$errors['pass'] = 'Please enter a password for your team';
 					}
@@ -263,12 +270,12 @@ class Submissions {
 				// Set competition term.
 				wp_set_post_terms( $pid, $competition, 'competition' );
 
-				//Set Challenge term
+				// Set Challenge term
 				if ( ! empty( $challenge_data ) ) {
 					wp_set_post_terms( $pid, $competition . '-' . $challenge_data['slug'], 'challenge' );
 				}
 
-				//Set Leaderboard term
+				// Set Leaderboard term
 				if ( ! empty( $leaderboard_data ) ) {
 					wp_set_post_terms( $pid, $competition . '-' . $leaderboard_data['slug'], 'leaderboard' );
 				}
@@ -278,10 +285,10 @@ class Submissions {
 				add_post_meta( $pid, '_submission_file_path', $data_file['file'] );
 				add_post_meta( $pid, '_submission_file_original_name', $uploaded_file['name'] );
 
-				//log error
+				// log error
 				$title = 'Successful submission ' . $pid;
 
-				$message = 'Submission ID: ' . admin_url( 'post.php?post=' . $pid . '&action=edit' ) . '<br>';
+				$message  = 'Submission ID: ' . admin_url( 'post.php?post=' . $pid . '&action=edit' ) . '<br>';
 				$message .= 'Username: ' . $user->user_login . '<br>';
 				$message .= 'IP: ' . $_SERVER['REMOTE_ADDR'] . '<br>';
 				$message .= 'Browser data: ' . $_SERVER['HTTP_USER_AGENT'] . '<br>';
@@ -290,7 +297,8 @@ class Submissions {
 
 				// $file_type = wp_check_filetype( basename( $data_file['file'] ), null );
 				// Prepare an array of post data for the attachment.
-				/*$attachment = array(
+				/*
+				$attachment = array(
 					'guid'           => $data_file['url'],
 					'post_mime_type' => $file_type['type'],
 					'post_title'     => preg_replace( '/\\.[^.]+$/', '', basename( $uploaded_file['name'] ) ),
@@ -301,7 +309,7 @@ class Submissions {
 
 			} else {
 
-				$message = $data_file['error'] . '<br>';
+				$message  = $data_file['error'] . '<br>';
 				$message .= 'Username: ' . $user->user_login . '<br>';
 				$message .= 'IP: ' . $_SERVER['REMOTE_ADDR'] . '<br>';
 				$message .= 'Browser data: ' . $_SERVER['HTTP_USER_AGENT'] . '<br>';
@@ -310,30 +318,32 @@ class Submissions {
 				$errors['file'] = 'There was an error uploading your file';
 			}
 
-			remove_filter( 'upload_dir', [ $this, 'change_upload_dir' ] );
+			remove_filter( 'upload_dir', array( $this, 'change_upload_dir' ) );
 
 		}
 
 		// Last check for errors.
 		if ( ! empty( $errors ) ) {
 
-			//Delete previous post and data
+			// Delete previous post and data
 			wp_delete_post( $pid );
 
-			header('HTTP/1.1 401 Unauthorized');
-			echo wp_json_encode( [ 'errors' => $errors ] );
+			header( 'HTTP/1.1 401 Unauthorized' );
+			echo wp_json_encode( array( 'errors' => $errors ) );
 		} else {
 
-			$submission = get_post( $pid ); //used in submission-item.php
+			$submission = get_post( $pid ); // used in submission-item.php
 			ob_start();
 			include CLEAD_PATH . 'templates/submission-item.php';
 			$data = ob_get_clean();
 
-			echo wp_json_encode( [
-				'success' => true,
-				'message' => '<div class="alert alert-success">Thank you. Your form has been successfully submitted!</div>',
-				'data'    => $data
-			] );
+			echo wp_json_encode(
+				array(
+					'success' => true,
+					'message' => '<div class="alert alert-success">Thank you. Your form has been successfully submitted!</div>',
+					'data'    => $data,
+				)
+			);
 		}
 		exit;
 	}
@@ -359,7 +369,7 @@ class Submissions {
 		$item    = (int) $_POST['item_id'];
 
 		if ( isset( $_POST['action'] ) && $_POST['action'] === 'iarai_delete_submission' ) {
-			$submissions = self::get_submissions(null, get_current_user_id());
+			$submissions = self::get_submissions( null, get_current_user_id() );
 
 			foreach ( $submissions as $k => $submission ) {
 				if ( $submission->ID == $item ) {
@@ -375,12 +385,22 @@ class Submissions {
 
 			if ( $deleted === true ) {
 
-				echo wp_json_encode( [ 'success' => true, 'message' => 'Submission deleted successfully!' ] );
+				echo wp_json_encode(
+					array(
+						'success' => true,
+						'message' => 'Submission deleted successfully!',
+					)
+				);
 				exit;
 			}
 		}
 
-		echo wp_json_encode( [ 'success' => false, 'message' => 'There was a problem deleting your data' ] );
+		echo wp_json_encode(
+			array(
+				'success' => false,
+				'message' => 'There was a problem deleting your data',
+			)
+		);
 
 		exit;
 
@@ -390,7 +410,6 @@ class Submissions {
 	 * Delete entry from database. Delete associated files
 	 *
 	 * @param int $id
-	 *
 	 */
 	private function delete_submission( $id ) {
 		$file_path  = get_post_meta( $id, '_submission_file_path', true );
@@ -413,10 +432,10 @@ class Submissions {
 		$user   = wp_get_current_user();
 		$parent = 0;
 		$type   = 'delete-submission';
-		$types  = [ $type ];
+		$types  = array( $type );
 
-		$title   = 'Deleted submission ' . $id;
-		$message = 'Username: ' . $user->user_login . '<br>';
+		$title    = 'Deleted submission ' . $id;
+		$message  = 'Username: ' . $user->user_login . '<br>';
 		$message .= 'IP: ' . $_SERVER['REMOTE_ADDR'] . '<br>';
 		$message .= 'Browser data: ' . $_SERVER['HTTP_USER_AGENT'] . '<br>';
 
@@ -428,7 +447,7 @@ class Submissions {
 	private function random_unique_username( $prefix = '' ) {
 		$user_exists = 1;
 		do {
-			$rnd_str     = sprintf( "%06d", mt_rand( 1, 999999 ) );
+			$rnd_str     = sprintf( '%06d', mt_rand( 1, 999999 ) );
 			$user_exists = username_exists( $prefix . $rnd_str );
 		} while ( $user_exists > 0 );
 
@@ -452,44 +471,44 @@ class Submissions {
 	 */
 	public static function get_submissions( $competition = null, $user_id = null, $challenge = null, $leaderboard = null ) {
 
-		$args = [
+		$args = array(
 			'post_status'    => 'publish',
 			'posts_per_page' => - 1,
 			'post_type'      => 'submission',
-		];
+		);
 
 		if ( isset( $user_id ) ) {
 			$args['author'] = $user_id;
 		}
 
-		$args['tax_query'] = [];
+		$args['tax_query'] = array();
 
 		if ( $competition !== null ) {
 			$args['tax_query'][] =
-				[
+				array(
 					'taxonomy'         => 'competition',
 					'field'            => 'term_id',
 					'terms'            => $competition,
-					'include_children' => false
-				];
+					'include_children' => false,
+				);
 		}
 
 		if ( $challenge !== null ) {
 			$args['tax_query'][] =
-				[
+				array(
 					'taxonomy' => 'challenge',
 					'field'    => 'slug',
 					'terms'    => $competition . '-' . $challenge,
-				];
+				);
 		}
 
 		if ( $leaderboard !== null ) {
 			$args['tax_query'][] =
-				[
+				array(
 					'taxonomy' => 'leaderboard',
 					'field'    => 'slug',
 					'terms'    => $competition . '-' . $leaderboard,
-				];
+				);
 		}
 
 		return get_posts( $args );
