@@ -474,7 +474,6 @@ class Plugin {
 	}
 
 	public function init() {
-
 		add_shortcode( 'competitions_app', array( $this, 'competitions_app_shortcode' ) );
 		add_shortcode( 'iarai_submission_form', array( $this, 'shortcode_submission' ) );
 		add_shortcode( 'iarai_leaderboard', array( $this, 'shortcode_leaderboard' ) );
@@ -800,9 +799,63 @@ class Plugin {
 		return false;
 	}
 
+	static function get_leadearboard_by_submission_id( $submission_id ) {
+		$competition_term = get_the_terms( $submission_id, 'competition' );
+
+		$challenge_term   = get_the_terms( $submission_id, 'challenge' );
+		$leaderboard_term = get_the_terms( $submission_id, 'leaderboard' );
+
+		if ( ! $competition_term || ! $leaderboard_term || ! $challenge_term ) {
+			return false;
+		}
+
+		$challenge_slug   = str_replace( $competition_term[0]->term_id . '-', '', $challenge_term[0]->name );
+		$leaderboard_slug = str_replace( $competition_term[0]->term_id . '-', '', $leaderboard_term[0]->name );
+
+		if ( ! $challenge_slug || ! $leaderboard_slug ) {
+			return false;
+		}
+
+		return self::get_leaderboard_settings_by_slug( $competition_term[0]->term_id, $challenge_slug, $leaderboard_slug );
+	}
+
+	static public function get_leaderboard_settings_by_slug( $competition_id, $challenge_slug, $leaderboard_slug ) {
+		$competitions = carbon_get_term_meta( $competition_id, 'competition_challenges' );
+
+		if ( ! $competitions ) {
+			return false;
+		}
+
+		foreach ( $competitions as $competition ) {
+			if ( sanitize_title( $competition['name'] ) === $challenge_slug ) {
+
+				if ( ! empty( $competition['competition_leaderboards'] ) ) {
+
+					foreach ( $competition['competition_leaderboards'] as $leaderboard ) {
+
+						if ( sanitize_title( $leaderboard['name'] ) === $leaderboard_slug ) {
+
+							return $leaderboard;
+						}
+					}
+				}
+			}
+		}
+		return false;
+	}
+
 	static function get_score_number( $post_id ) {
 
 		if ( $score = get_post_meta( $post_id, '_score', true ) ) {
+			return $score;
+		}
+
+		return false;
+	}
+
+	static function get_score_number_full( $post_id ) {
+
+		if ( $score = get_post_meta( $post_id, '_score_full', true ) ) {
 			return $score;
 		}
 
@@ -948,9 +1001,9 @@ class Plugin {
 							 $search_query .
 							 " AND {$wpdb->prefix}posts.post_type = 'submission'" .
 							 " AND {$wpdb->prefix}posts.post_status = 'publish'" .
-							 " GROUP BY {$wpdb->prefix}posts.ID" ;
+							 " GROUP BY {$wpdb->prefix}posts.ID";
 							// " ORDER BY {$wpdb->prefix}postmeta.meta_value+0 " . $sort_order;
- 
+
 		if ( $search_term ) {
 			$submissions_query = $wpdb->prepare(
 				$submissions_query,
