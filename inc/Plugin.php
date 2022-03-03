@@ -819,7 +819,7 @@ class Plugin {
 		return self::get_leaderboard_settings_by_slug( $competition_term[0]->term_id, $challenge_slug, $leaderboard_slug );
 	}
 
-	static public function get_leaderboard_settings_by_slug( $competition_id, $challenge_slug, $leaderboard_slug ) {
+	public static function get_leaderboard_settings_by_slug( $competition_id, $challenge_slug, $leaderboard_slug ) {
 		$competitions = carbon_get_term_meta( $competition_id, 'competition_challenges' );
 
 		if ( ! $competitions ) {
@@ -1044,7 +1044,8 @@ class Plugin {
 					exit;
 				}
 
-				$result = array();
+				$leaderboard_settings = self::get_leaderboard_settings_by_slug( $competition, $challenge, $leaderboard );
+				$result               = array();
 
 				foreach ( $submissions as $submission ) {
 
@@ -1065,6 +1066,7 @@ class Plugin {
 						'id'              => $submission->ID,
 						'team'            => $name,
 						'score'           => self::get_score_number( $submission->ID ),
+						'extraScores'     => Submissions::get_score_lines( $submission->ID, $leaderboard_settings ),
 						'date'            => get_the_date( 'Y-m-d H:i', $submission->ID ),
 						'log'             => isset( $user ) ? $log : '',
 						'notes'           => isset( $user ) ? $notes : '',

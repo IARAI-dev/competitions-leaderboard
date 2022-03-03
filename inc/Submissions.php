@@ -26,13 +26,13 @@ class Submissions {
 	}
 
 		/**
-	 * Return submissions for user
-	 *
-	 * @param int $competition
-	 * @param int $user_id
-	 *
-	 * @return bool|\WP_Post[]
-	 */
+		 * Return submissions for user
+		 *
+		 * @param int $competition
+		 * @param int $user_id
+		 *
+		 * @return bool|\WP_Post[]
+		 */
 	public static function get_submissions( $competition = null, $user_id = null, $challenge = null, $leaderboard = null ) {
 
 		$args = array(
@@ -77,6 +77,45 @@ class Submissions {
 
 		return get_posts( $args );
 	}
+
+	public static function get_score_lines( $submission, $leaderboard_settings = null ) {
+
+		if ( ! isset( $leaderboard_settings ) ) {
+			$leaderboard_settings = Plugin::get_leadearboard_by_submission_id( $submission );
+
+			if ( ! $leaderboard_settings ) {
+				return array();
+			}
+		}
+
+		if ( $leaderboard_settings && $leaderboard_settings['competition_score_has_multiple'] !== 'no' ) {
+
+			$lines = $leaderboard_settings['competition_score_multiple'];
+
+			if ( $lines ) {
+				$score_values = get_post_meta( $submission->ID, '_score_full', true );
+				$score_values = explode( "\n", $score_values );
+				$data         = array();
+
+				foreach ( $lines as $k => $line ) {
+					if ( $line['score_line'] || ! isset( $score_values[ $k ] ) ) {
+						continue;
+					}
+
+					$data[] = array(
+						'name'  => $line,
+						'value' => $score_values[ $k ],
+					);
+				}
+			}
+
+			return $data;
+		}
+
+		return array();
+
+	}
+
 
 	public static function get_score_path( $file_path ) {
 		$score_path_parts = pathinfo( $file_path );
@@ -224,7 +263,7 @@ class Submissions {
 		// Get allowed file extensions.
 
 		// v2.0.
-		if ( ! empty( $leaderboard_data )	 ) {
+		if ( ! empty( $leaderboard_data ) ) {
 			$extension_restrict = $leaderboard_data['competition_file_types'];
 
 			if ( $extension_restrict === 'custom' ) {

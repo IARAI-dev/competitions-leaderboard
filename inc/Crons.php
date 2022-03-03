@@ -61,8 +61,11 @@ class Crons {
 
 			// if the passed time is equal to the frequency, execute the function
 			if ( $passed === $frequency ) {
+				
 				// since the cron executed for this competition, reset the passed time to 0
+				
 				update_term_meta( $id, 'competition_time_passed_since_update', 0 );
+				
 				$taxQuery    = array(
 					array(
 						'taxonomy' => 'competition',
@@ -79,13 +82,15 @@ class Crons {
 						'tax_query'      => $taxQuery,
 					)
 				);
+
 				foreach ( $submissions as $submission ) {
 					$file_path  = get_post_meta( $submission->ID, '_submission_file_path', true );
 					$score_path = Submissions::get_score_path( $file_path );
+
 					if ( file_exists( $score_path ) ) {
 						$score = file_get_contents( $score_path );
 
-						// Check if we have multiple scores
+						// Check if we have multiple scores.
 						$leaderboard = Plugin::get_leadearboard_by_submission_id( $submission->ID );
 						if ( $leaderboard && $leaderboard['competition_score_has_multiple'] !== 'no' ) {
 
@@ -107,6 +112,7 @@ class Crons {
 							}
 						}
 
+						// Save the score in post meta.
 						$score = $score - 0;
 						if ( $score > 0 ) {
 							update_post_meta( $submission->ID, '_score', $score );
