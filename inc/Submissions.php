@@ -25,6 +25,67 @@ class Submissions {
 		add_action( 'before_delete_post', array( $this, 'delete_submission_files' ) );
 	}
 
+		/**
+	 * Return submissions for user
+	 *
+	 * @param int $competition
+	 * @param int $user_id
+	 *
+	 * @return bool|\WP_Post[]
+	 */
+	public static function get_submissions( $competition = null, $user_id = null, $challenge = null, $leaderboard = null ) {
+
+		$args = array(
+			'post_status'    => 'publish',
+			'posts_per_page' => - 1,
+			'post_type'      => 'submission',
+		);
+
+		if ( isset( $user_id ) ) {
+			$args['author'] = $user_id;
+		}
+
+		$args['tax_query'] = array();
+
+		if ( $competition !== null ) {
+			$args['tax_query'][] =
+				array(
+					'taxonomy'         => 'competition',
+					'field'            => 'term_id',
+					'terms'            => $competition,
+					'include_children' => false,
+				);
+		}
+
+		if ( $challenge !== null ) {
+			$args['tax_query'][] =
+				array(
+					'taxonomy' => 'challenge',
+					'field'    => 'slug',
+					'terms'    => $competition . '-' . $challenge,
+				);
+		}
+
+		if ( $leaderboard !== null ) {
+			$args['tax_query'][] =
+				array(
+					'taxonomy' => 'leaderboard',
+					'field'    => 'slug',
+					'terms'    => $competition . '-' . $leaderboard,
+				);
+		}
+
+		return get_posts( $args );
+	}
+
+	public static function get_score_path( $file_path ) {
+		$score_path_parts = pathinfo( $file_path );
+		if ( ! isset( $score_path_parts['dirname'] ) ) {
+			return false;
+		}
+
+		return $score_path_parts['dirname'] . '/' . $score_path_parts['filename'] . '.score';
+	}
 
 	public function iarai_file_upload() {
 
@@ -461,67 +522,6 @@ class Submissions {
 		return $this->filename;
 	}
 
-	/**
-	 * Return submissions for user
-	 *
-	 * @param int $competition
-	 * @param int $user_id
-	 *
-	 * @return bool|\WP_Post[]
-	 */
-	public static function get_submissions( $competition = null, $user_id = null, $challenge = null, $leaderboard = null ) {
-
-		$args = array(
-			'post_status'    => 'publish',
-			'posts_per_page' => - 1,
-			'post_type'      => 'submission',
-		);
-
-		if ( isset( $user_id ) ) {
-			$args['author'] = $user_id;
-		}
-
-		$args['tax_query'] = array();
-
-		if ( $competition !== null ) {
-			$args['tax_query'][] =
-				array(
-					'taxonomy'         => 'competition',
-					'field'            => 'term_id',
-					'terms'            => $competition,
-					'include_children' => false,
-				);
-		}
-
-		if ( $challenge !== null ) {
-			$args['tax_query'][] =
-				array(
-					'taxonomy' => 'challenge',
-					'field'    => 'slug',
-					'terms'    => $competition . '-' . $challenge,
-				);
-		}
-
-		if ( $leaderboard !== null ) {
-			$args['tax_query'][] =
-				array(
-					'taxonomy' => 'leaderboard',
-					'field'    => 'slug',
-					'terms'    => $competition . '-' . $leaderboard,
-				);
-		}
-
-		return get_posts( $args );
-	}
-
-	public static function get_score_path( $file_path ) {
-		$score_path_parts = pathinfo( $file_path );
-		if ( ! isset( $score_path_parts['dirname'] ) ) {
-			return false;
-		}
-
-		return $score_path_parts['dirname'] . '/' . $score_path_parts['filename'] . '.score';
-	}
 
 	public function change_upload_dir( $dirs ) {
 

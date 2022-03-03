@@ -23,7 +23,7 @@ class Plugin {
 		add_action( 'init', array( $this, 'init' ) );
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
-		add_action( 'admin_enqueue_scripts', [ $this, 'custom_admin_css' ] );
+		add_action( 'admin_enqueue_scripts', array( $this, 'custom_admin_css' ) );
 
 		add_action( 'wp_ajax_iarai_filter_leaderboard', array( $this, 'ajax_filter_leaderboard' ) );
 		add_action( 'wp_ajax_nopriv_iarai_filter_leaderboard', array( $this, 'ajax_filter_leaderboard' ) );
@@ -537,7 +537,7 @@ class Plugin {
 	}
 
 	public function custom_admin_css() {
-		wp_enqueue_style( 'admin-styles', CLEAD_URL .'assets/css/admin.css' );
+		wp_enqueue_style( 'admin-styles', CLEAD_URL . 'assets/css/admin.css' );
 	}
 
 
@@ -900,7 +900,7 @@ class Plugin {
 	 *
 	 * @return array|false|object
 	 */
-	public static function query_leaderboard( $competition = null, $search_term = '', $sort_order = 'ASC' ) {
+	public static function query_leaderboard( $competition = null, $search_term = '', $sort_order = 'ASC', $user = null, $challenge_slug = null, $leaderboard_slug = null ) {
 
 		global $wpdb;
 
@@ -909,8 +909,24 @@ class Plugin {
 		}
 
 		$author_query = '';
-		if ( is_user_logged_in() && isset( $_POST['current_user'] ) && (bool) $_POST['current_user'] === true ) {
-			$author_query = " AND {$wpdb->prefix}posts.post_author IN (" . get_current_user_id() . ')';
+
+		if ( isset( $user ) ) {
+			$author_query = " AND {$wpdb->prefix}posts.post_author IN (" . $user . ')';
+		}
+
+		$terms_query = " {$wpdb->prefix}term_relationships.term_taxonomy_id IN ($competition)";
+
+		// Get from leaderbord, then challenge. we need just one term, not all in the logically
+		if ( ! empty( $leaderboard_slug ) ) {
+
+			$leaderboard = get_term_by( 'slug', "$competition-$leaderboard_slug", 'leaderboard' );
+			$terms_query = " {$wpdb->prefix}term_relationships.term_taxonomy_id IN ($leaderboard->term_id)";
+		} elseif ( ! empty( $challenge_slug ) ) {
+
+			$challenge = get_term_by( 'slug', "$competition-$challenge_slug", 'challenge' );
+			if ( ! empty( $challenge ) ) {
+				$terms_query = " {$wpdb->prefix}term_relationships.term_taxonomy_id IN ($challenge->term_id)";
+			}
 		}
 
 		$search_query = '';
@@ -926,15 +942,15 @@ class Plugin {
 							 " INNER JOIN {$wpdb->prefix}postmeta ON ( {$wpdb->prefix}posts.ID = {$wpdb->prefix}postmeta.post_id )" .
 							 " INNER JOIN {$wpdb->prefix}postmeta AS mt1 ON ( {$wpdb->prefix}posts.ID = mt1.post_id )" .
 							 ' WHERE' .
-							 " {$wpdb->prefix}term_relationships.term_taxonomy_id IN ($competition)" .
+							 $terms_query .
 							 $author_query .
-							 " AND ( {$wpdb->prefix}postmeta.meta_key = '_score' AND {$wpdb->prefix}postmeta.meta_value > '0' )" .
+							// " AND ( {$wpdb->prefix}postmeta.meta_key = '_score' AND {$wpdb->prefix}postmeta.meta_value > '0' )" .
 							 $search_query .
 							 " AND {$wpdb->prefix}posts.post_type = 'submission'" .
 							 " AND {$wpdb->prefix}posts.post_status = 'publish'" .
-							 " GROUP BY {$wpdb->prefix}posts.ID" .
-							 " ORDER BY {$wpdb->prefix}postmeta.meta_value+0 " . $sort_order;
-
+							 " GROUP BY {$wpdb->prefix}posts.ID" ;
+							// " ORDER BY {$wpdb->prefix}postmeta.meta_value+0 " . $sort_order;
+ 
 		if ( $search_term ) {
 			$submissions_query = $wpdb->prepare(
 				$submissions_query,
@@ -952,11 +968,15 @@ class Plugin {
 
 		if ( isset( $_POST['action'] ) && $_POST['action'] === 'iarai_filter_leaderboard' ) {
 
-			global $wpdb;
-			$competition = (int) $_POST['competition'];
+			$competition  = (int) $_POST['competition'];
+			$current_user = null;
+
+			if ( isset( $_POST['current_user'] ) && (int) $_POST['current_user'] !== 0 && is_user_logged_in() ) {
+				$current_user = get_current_user_id();
+			}
 
 			// Submissions.
-			$search_term = $_POST['term'];
+			$search_term = sanitize_text_field( $_POST['term'] );
 
 			// v2 React.
 			if ( isset( $_POST['challenge'], $_POST['leaderboard'] ) ) {
@@ -964,12 +984,7 @@ class Plugin {
 				$challenge   = sanitize_text_field( $_POST['challenge'] );
 				$leaderboard = sanitize_text_field( $_POST['leaderboard'] );
 
-				$user = null;
-				if ( isset( $_POST['current_user'] ) && (int) $_POST['current_user'] !== 0 ) {
-					$user = get_current_user_id();
-				}
-
-				$submissions = Submissions::get_submissions( $competition, $user, $challenge, $leaderboard );
+				$submissions = self::query_leaderboard( $competition, $search_term, 'ASC', $current_user, $challenge, $leaderboard );
 
 				if ( empty( $submissions ) ) {
 					wp_send_json_success( array( 'results' => array() ), 200 );
@@ -1009,18 +1024,18 @@ class Plugin {
 
 			}
 
-			$submissions = self::query_leaderboard( $competition, $search_term );
+			$submissions = self::query_leaderboard( $competition, $search_term, 'ASC', $current_user );
 
-			if ( $submissions ) {
-				$result = '';
-				foreach ( $submissions as $submission ) {
-					$result .= self::get_leaderboard_row( $submission, $competition );
-				}
-				wp_send_json_success( array( 'results' => $result ) );
-				exit;
+			// Old style leaderboard.
+			$result = '';
+			foreach ( $submissions as $submission ) {
+				$result .= self::get_leaderboard_row( $submission, $competition );
 			}
+			wp_send_json_success( array( 'results' => $result ) );
+			exit;
 		}
-		wp_send_json_success( array( 'results' => false ) );
+
+		wp_send_json_error( array( 'results' => false ), 401 );
 		exit;
 	}
 

@@ -480,8 +480,51 @@ class Options {
 
 											/*
 											Field::make( 'text', 'competition_score_decimals', 'Score decimals' )
-												->set_attribute( 'type', 'number' )
+												->set_attribute( 'type', 'number' ),
 											*/
+
+											Field::make( 'text', 'competition_score_error', 'Score error number is' ),
+											Field::make( 'select', 'competition_score_has_multiple', 'Is there more than one score?' )
+											->add_options(
+												array(
+													'no' => 'No',
+													'yes' => 'Yes',
+												)
+											),
+
+											Field::make( 'complex', 'competition_score_multiple', 'Score lines' )
+												->setup_labels(
+													array(
+														'plural_name'   => 'Score Line',
+														'singular_name' => 'Score Lines',
+													)
+												)
+												->set_layout( 'tabbed-vertical' )
+												->set_min( 1 )
+												->add_fields(
+													array(
+														Field::make( 'checkbox', 'score_line', 'Is this the score line?' ),
+														Field::make( 'text', 'line', 'Line name' )
+														->set_conditional_logic(
+															array(
+																array(
+																	'field'   => 'score_line',
+																	'value'   => '',
+																	'compare' => '=',
+																),
+															)
+														),
+													)
+												)
+												->set_conditional_logic(
+													array(
+														array(
+															'field'   => 'competition_score_has_multiple',
+															'value'   => 'yes',
+															'compare' => '=',
+														),
+													)
+												),
 
 											Field::make( 'select', 'competition_score_sort', 'Leaderboard Score Sorting' )
 											->add_options(
