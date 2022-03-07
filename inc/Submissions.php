@@ -93,18 +93,21 @@ class Submissions {
 			$lines = $leaderboard_settings['competition_score_multiple'];
 
 			if ( $lines ) {
-				$score_values = get_post_meta( $submission->ID, '_score_full', true );
-				$score_values = explode( "\n", $score_values );
+				$score_values = Plugin::get_score_number_full( $submission );
+
 				$data         = array();
 
 				foreach ( $lines as $k => $line ) {
-					if ( $line['score_line'] || ! isset( $score_values[ $k ] ) ) {
+
+					// Skip score line.
+					if ( $line['score_line']) {
 						continue;
 					}
 
 					$data[] = array(
 						'name'  => $line['line'],
-						'value' => $score_values[ $k ],
+						'value' => $score_values[ $k ] ?? '',
+						'score_values' => $score_values,
 					);
 				}
 			}

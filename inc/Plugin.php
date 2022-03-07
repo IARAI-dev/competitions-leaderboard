@@ -494,7 +494,7 @@ class Plugin {
 		// Moderators
 		add_meta_box(
 			'submission_files_metabox',
-			__( 'Submission info', 'bbpress' ),
+			__( 'Submission info', 'competitions-leaderboard' ),
 			array( $this, 'file_info_metabox' ),
 			'submission',
 			'advanced',
@@ -512,6 +512,13 @@ class Plugin {
 			$score = 'To be calculated';
 		}
 		echo '<p><strong>Score:</strong> ' . $score . '<br>';
+
+		$score_full = self::get_score_number_full( $post->ID );
+		if ( ! $score_full ) {
+			$score_full = 'To be calculated';
+		}
+
+		echo '<p><strong>Score full:</strong><br>' . implode( "<br>", $score_full ) . '<br>';
 
 		if ( get_post_meta( $post->ID, '_submission_file_path', true ) ) {
 			echo '<p><strong>File location</strong>:<br>';
