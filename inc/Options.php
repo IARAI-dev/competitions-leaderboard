@@ -339,10 +339,38 @@ class Options {
 											'no'     => 'Closed',
 										)
 									),
+
 									Field::make( 'text', 'external_submission', 'Submission of other files' )
 										->set_help_text( 'Link to submit' ),
+									
 									Field::make( 'text', 'external_submission_type', 'Submission Type' )
-										->set_attribute( 'placeholder', 'Abstract' ),
+										->set_attribute( 'placeholder', 'Abstract' )
+										->set_conditional_logic(
+											array(
+												array(
+													'field'   => 'external_submission',
+													'value'   => '',
+													'compare' => '!=',
+												),
+											)
+										),
+										
+									Field::make( 'select', 'external_submission_ui', 'How to show the external submission?' )
+										->add_options(
+											array(
+												'popup'    => 'Popup',
+												'page' => 'On another page',
+											)
+										)
+										->set_conditional_logic(
+											array(
+												array(
+													'field'   => 'external_submission',
+													'value'   => '',
+													'compare' => '!=',
+												),
+											)
+										),
 
 									Field::make( 'complex', 'competition_leaderboards', 'Leaderboards' )
 									->set_conditional_logic(

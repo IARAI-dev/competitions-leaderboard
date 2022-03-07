@@ -252,7 +252,7 @@ class Plugin {
 
 		set_transient( 'main_page_header', $div, 60 * 60 );
 
-		// disable sticky
+		// disable sticky.
 		if ( ! empty( $competition_zone ) ) {
 			$div = str_replace( $replace_class, $replace_class . ' disable-sticky', $div );
 
@@ -261,9 +261,13 @@ class Plugin {
 		}
 
 		echo $div;
-
 	}
 
+	/**
+	 * Get all previous competitions data.
+	 *
+	 * @return \WP_REST_Response;
+	 */
 	public function api_get_past_competitions() {
 
 		$terms = get_terms(
@@ -314,6 +318,11 @@ class Plugin {
 
 	}
 
+	/**
+	 * Get main competition data
+	 *
+	 * @return \WP_REST_Response
+	 */
 	public function api_get_main_competition() {
 
 		$data = array();
@@ -363,7 +372,7 @@ class Plugin {
 
 		$is_public = carbon_get_term_meta( $competition->term_id, 'competition_is_public' );
 
-		// private competition
+		// private competition.
 		if ( ! $is_public && ! is_user_logged_in() ) {
 			return new \WP_REST_Response( array( 'error' => 'Forbidden' ), 401 );
 		}
