@@ -798,8 +798,9 @@ class Plugin {
 		}
 	}
 
-	static function get_log_content( $id ) {
+	static function get_log_path( $id ) {
 		$file_path = get_post_meta( $id, '_submission_file_path', true );
+
 		if ( $file_path ) {
 			$path_parts = pathinfo( $file_path );
 			if ( ! isset( $path_parts['dirname'] ) ) {
@@ -807,12 +808,32 @@ class Plugin {
 			}
 
 			$log_path = $path_parts['dirname'] . '/' . $path_parts['filename'] . '.log';
+
 			if ( file_exists( $log_path ) ) {
-				return file_get_contents( $log_path );
+				return $log_path;
 			}
 		}
 
 		return false;
+	}
+
+	public static function get_log_url( $id ) {
+		$log_path = self::get_log_path( $id );
+		if ( ! $log_path ) {
+			return false;
+		}
+
+		return str_replace( ABSPATH, home_url(), $log_path );
+	}
+
+	public static function get_log_content( $id ) {
+		
+		$log_path = self::get_log_path( $id );
+		if ( ! $log_path ) {
+			return false;
+		}
+
+		return file_get_contents( $log_path );
 	}
 
 	static function get_leadearboard_by_submission_id( $submission_id ) {
@@ -1069,7 +1090,7 @@ class Plugin {
 					$user            = get_user_by( 'id', $user_id );
 					$name            = $user->display_name;
 					$team            = wp_get_post_terms( $submission->ID, 'team' );
-					$log             = ( self::get_log_content( $submission->ID ) ? self::get_log_content( $submission->ID ) : '' );
+					$log             = ( self::get_log_url( $submission->ID ) ? self::get_log_url( $submission->ID ) : '' );
 					$notes           = get_post_meta( $submission->ID, '_submission_notes', true ) ?? '';
 					$is_current_user = ( is_user_logged_in() && $user_id === get_current_user_id() ) ? true : false;
 
