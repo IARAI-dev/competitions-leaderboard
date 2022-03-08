@@ -823,7 +823,8 @@ class Plugin {
 			return false;
 		}
 
-		return str_replace( ABSPATH, home_url(), $log_path );
+		$arr = explode( 'wp-content', $log_path );
+		return home_url( 'wp-content' . $arr[1] );
 	}
 
 	public static function get_log_content( $id ) {
