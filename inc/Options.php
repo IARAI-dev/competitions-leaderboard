@@ -408,34 +408,36 @@ class Options {
 													Field::make( 'text', 'name', 'Name' ),
 													Field::make( 'text', 'link', 'Link' )
 														 ->set_attribute( 'placeholder', 'https://' ),
+
+
 													Field::make( 'date_time', 'release_date', 'Release Data Date' )
-													->set_width( 50 )
-													->set_input_format( 'Y-m-d H:i', 'Y-m-d H:i' )
-													->set_picker_options(
-														array(
-															'time_24hr' => true,
-															'enableSeconds' => false,
-														)
-													),
+														->set_width( 50 )
+														->set_input_format( 'Y-m-d H:i', 'Y-m-d H:i' )
+														->set_picker_options(
+															array(
+																'time_24hr' => true,
+																'enableSeconds' => false,
+															)
+														),
+
 													Field::make( 'select', 'release_date_tz', 'Timezone' )
 														->set_width( 50 )
 														->add_options( array( 'CET'=>'CET', 'AoE' => 'AoE' ) ),
-
-													),
+													
 													Field::make( 'date_time', 'hide_date', 'Hide Data Date' )
-													->set_width( 50 )
-													->set_input_format( 'Y-m-d H:i', 'Y-m-d H:i' )
-													->set_picker_options(
-														array(
-															'time_24hr' => true,
-															'enableSeconds' => false,
-														)
-													),
+														 ->set_width( 50 )
+														 ->set_input_format( 'Y-m-d H:i', 'Y-m-d H:i' )
+														 ->set_picker_options(
+															 array(
+																 'time_24hr' => true,
+																 'enableSeconds' => false,
+															 )
+														 ),
 													Field::make( 'select', 'hide_date_tz', 'Timezone' )
 														->set_width( 50 )
 														->add_options( array( 'CET'=>'CET', 'AoE' => 'AoE' ) ),
-
-													),
+												)
+													
 											)
 											   ->set_header_template( ' <%- name ? name : ($_index+1) %>' ),
 
