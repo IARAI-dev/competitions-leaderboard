@@ -192,6 +192,9 @@ class Options {
 										 ->set_attribute( 'maxLength', 80 )
 										 ->set_help_text( 'Max 80 characters' )
 										 ->set_attribute( 'placeholder', 'IEEE Big Data - Stage 1 (challenge 2 would be IEEE Big Data - Stage 2)' ),
+									
+									Field::make( 'text', 'path', 'Challenge server path' )
+										 ->set_help_text( 'The path on the server inside the competition folder.' ),
 
 									Field::make( 'rich_text', 'description', 'Challenge description' )
 										 ->set_attribute( 'maxLength', 1500 )
@@ -394,6 +397,8 @@ class Options {
 										array(
 
 											Field::make( 'text', 'name', 'Name' ),
+											Field::make( 'text', 'path', 'Leaderboard server path' )
+										 		->set_help_text( 'The path on the server inside the competition folder.' ),
 
 											Field::make( 'complex', 'data', 'Data' )
 											->setup_labels(

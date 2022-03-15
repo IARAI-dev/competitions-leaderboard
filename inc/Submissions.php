@@ -95,18 +95,18 @@ class Submissions {
 			if ( $lines ) {
 				$score_values = Plugin::get_score_number_full( $submission );
 
-				$data         = array();
+				$data = array();
 
 				foreach ( $lines as $k => $line ) {
 
 					// Skip score line.
-					if ( $line['score_line']) {
+					if ( $line['score_line'] ) {
 						continue;
 					}
 
 					$data[] = array(
-						'name'  => $line['line'],
-						'value' => $score_values[ $k ] ?? '',
+						'name'         => $line['line'],
+						'value'        => $score_values[ $k ] ?? '',
 						'score_values' => $score_values,
 					);
 				}
@@ -119,7 +119,12 @@ class Submissions {
 
 	}
 
-
+	/**
+	 * Build the score path for a given submission file.
+	 *
+	 * @param string $file_path Submission file_path.
+	 * @return string
+	 */
 	public static function get_score_path( $file_path ) {
 		$score_path_parts = pathinfo( $file_path );
 		if ( ! isset( $score_path_parts['dirname'] ) ) {
@@ -133,12 +138,12 @@ class Submissions {
 
 		check_ajax_referer( 'iarai-submissions-nonce', 'security' );
 
-		// Upload file
+		// Upload file.
 		if ( ! isset( $_POST['action'] ) || $_POST['action'] !== 'iarai_file_upload' ) {
 			exit;
 		}
 
-		// Save new submissions && get ID
+		// Save new submissions && get ID.
 		$errors = array();
 
 		if ( isset( $_POST['title'] ) && '' != $_POST['title'] ) {
@@ -190,7 +195,7 @@ class Submissions {
 			$user_id = get_current_user_id();
 		}
 
-		// Intermediate stop to ensure basic data is set
+		// Intermediate stop to ensure basic data is set.
 		if ( ! empty( $errors ) ) {
 			echo wp_json_encode( array( 'errors' => $errors ) );
 			exit;
@@ -213,15 +218,30 @@ class Submissions {
 
 			if ( $competition_challenges && ! empty( $competition_challenges ) ) {
 				foreach ( $competition_challenges as $competition_challenge ) {
-					if ( sanitize_title_with_dashes( $challenge ) === sanitize_title_with_dashes( $competition_challenge['name'] ) ) {
+
+					$path = sanitize_title_with_dashes( $competition_challenge['name'] );
+					if ( isset( $competition_challenge['path'] ) && ! empty( $competition_challenge['path'] ) ) {
+						$path = $competition_challenge['path'];
+					}
+
+					if ( sanitize_title_with_dashes( $challenge ) === $path ) {
+
 						$challenge_data         = $competition_challenge;
-						$challenge_data['slug'] = sanitize_title_with_dashes( $competition_challenge['name'] );
+						$challenge_data['slug'] = $path;
 
 						if ( isset( $competition_challenge['competition_leaderboards'] ) && ! empty( $competition_challenge['competition_leaderboards'] ) ) {
 							foreach ( $competition_challenge['competition_leaderboards'] as $lb ) {
-								if ( sanitize_title_with_dashes( $leaderboard ) === sanitize_title_with_dashes( $lb['name'] ) ) {
+
+								$path2 = sanitize_title_with_dashes( $lb['name'] );
+								if ( isset( $lb['path'] ) && ! empty( $lb['path'] ) ) {
+									$path2 = $lb['path'];
+								}
+
+								if ( sanitize_title_with_dashes( $leaderboard ) === $path2 ) {
+
 									$leaderboard_data         = $lb;
-									$leaderboard_data['slug'] = sanitize_title_with_dashes( $lb['name'] );
+									$leaderboard_data['slug'] = $path2;
+
 									break 2;
 								}
 							}
@@ -232,7 +252,7 @@ class Submissions {
 			}
 		}
 
-		// return error if limit exceeded
+		// return error if limit exceeded.
 		if ( ! empty( $leaderboard_data ) ) {
 			$limit = $leaderboard_data['competition_limit_submit'];
 		} else {
@@ -295,7 +315,7 @@ class Submissions {
 				'post_author'  => $this->user->ID,
 				'post_content' => '',
 				'post_status'  => 'publish',
-				'post_type'    => 'submission',  // Use a custom post type if you want to
+				'post_type'    => 'submission',
 			);
 
 			// save the new post and return its ID
@@ -308,7 +328,7 @@ class Submissions {
 				$this->leaderboard = $leaderboard;
 			}
 
-			// Actually try to upload the file
+			// Actually try to upload the file.
 			add_filter( 'upload_dir', array( $this, 'change_upload_dir' ) );
 			$upload_overrides = array(
 				'action'                   => 'iarai_file_upload',
@@ -319,7 +339,7 @@ class Submissions {
 			require_once ABSPATH . 'wp-admin/includes/file.php';
 			$data_file = wp_handle_upload( $uploaded_file, $upload_overrides );
 
-			// For log
+			// For log.
 			$user    = wp_get_current_user();
 			$parent  = 0;
 			$type    = 'submission';
@@ -330,7 +350,7 @@ class Submissions {
 				$types[] = $tag_log;
 			}
 
-			// If file uploaded
+			// If file uploaded.
 			if ( $data_file && ! isset( $data_file['error'] ) ) {
 
 				// Add notes.
@@ -346,12 +366,12 @@ class Submissions {
 
 					if ( $pass ) {
 
-						// Check existing team
+						// Check existing team.
 						$existing_team = get_term_by( 'slug', sanitize_title( $team ), 'team' );
 						if ( $existing_team ) {
 							$existing_pass = get_term_meta( $existing_team->term_id, '_team_pass', true );
 
-							// Team and pass match
+							// Team and pass match.
 							if ( $existing_pass && $existing_pass == $pass ) {
 								wp_set_post_terms( $pid, array( $existing_team->term_id ), 'team' );
 							} else {
@@ -373,22 +393,22 @@ class Submissions {
 				// Set competition term.
 				wp_set_post_terms( $pid, $competition, 'competition' );
 
-				// Set Challenge term
+				// Set Challenge term.
 				if ( ! empty( $challenge_data ) ) {
 					wp_set_post_terms( $pid, $competition . '-' . $challenge_data['slug'], 'challenge' );
 				}
 
-				// Set Leaderboard term
+				// Set Leaderboard term.
 				if ( ! empty( $leaderboard_data ) ) {
 					wp_set_post_terms( $pid, $competition . '-' . $leaderboard_data['slug'], 'leaderboard' );
 				}
 
-				// Save file name to the submission
+				// Save file name to the submission.
 				add_post_meta( $pid, '_submission_file_url', $data_file['url'] );
 				add_post_meta( $pid, '_submission_file_path', $data_file['file'] );
 				add_post_meta( $pid, '_submission_file_original_name', $uploaded_file['name'] );
 
-				// log error
+				// log error.
 				$title = 'Successful submission ' . $pid;
 
 				$message  = 'Submission ID: ' . admin_url( 'post.php?post=' . $pid . '&action=edit' ) . '<br>';
@@ -428,7 +448,7 @@ class Submissions {
 		// Last check for errors.
 		if ( ! empty( $errors ) ) {
 
-			// Delete previous post and data
+			// Delete previous post and data.
 			wp_delete_post( $pid );
 
 			header( 'HTTP/1.1 401 Unauthorized' );
@@ -531,7 +551,7 @@ class Submissions {
 		delete_post_meta( $id, '_submission_file_path' );
 		delete_post_meta( $id, '_submission_file_original_name' );
 
-		// For log
+		// For log.
 		$user   = wp_get_current_user();
 		$parent = 0;
 		$type   = 'delete-submission';
@@ -557,6 +577,14 @@ class Submissions {
 		return $prefix . $rnd_str;
 	}
 
+	/**
+	 * Set submission custom file name.
+	 *
+	 * @param array $dir
+	 * @param string $name
+	 * @param string $ext
+	 * @return string
+	 */
 	public function custom_filename( $dir, $name, $ext ) {
 
 		$this->filename = time() . '-' . $this->user->ID . '-' . rand( 0, 100000 ) . $ext;
@@ -564,7 +592,12 @@ class Submissions {
 		return $this->filename;
 	}
 
-
+	/**
+	 * Set custom upload directory for submission files.
+	 *
+	 * @param array $dirs
+	 * @return array
+	 */
 	public function change_upload_dir( $dirs ) {
 
 		$postfix = '';
@@ -587,6 +620,5 @@ class Submissions {
 
 		return $dirs;
 	}
-
 
 }
