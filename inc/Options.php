@@ -672,8 +672,8 @@ class Options {
 									Field::make( 'select', 'role', 'Role in competition' )
 									->add_options(
 										array(
-											'Co-Chair' => 'Team',
-											'Chair'    => 'Core Organizer',
+											'Team' => 'Team',
+											'Core Organizer'    => 'Core Organizer',
 										)
 									),
 									Field::make( 'text', 'affiliation', 'Affiliation' ),
