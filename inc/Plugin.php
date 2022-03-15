@@ -451,7 +451,12 @@ class Plugin {
 
 				foreach ( $data['competition_challenges'] as $k => $challenge ) {
 
-					$data['competition_challenges'][ $k ]['slug'] = sanitize_title_with_dashes( $challenge['name'] );
+					$path = sanitize_title_with_dashes( $challenge['name'] );
+					if ( isset( $challenge['path'] ) && ! empty( $challenge['path'] ) ) {
+						$path = $challenge['path'];
+					}
+
+					$data['competition_challenges'][ $k ]['slug'] = $path;
 
 					if ( ! empty( $challenge['timeline'] ) ) {
 						foreach ( $challenge['timeline'] as $j => $timeline ) {
@@ -468,7 +473,12 @@ class Plugin {
 
 					if ( ! empty( $challenge['competition_leaderboards'] ) ) {
 						foreach ( $challenge['competition_leaderboards'] as $i => $leaderboard ) {
-							$data['competition_challenges'][ $k ]['competition_leaderboards'][ $i ]['slug'] = sanitize_title_with_dashes( $leaderboard['name'] );
+
+							$path2 = sanitize_title_with_dashes( $leaderboard['name'] );
+							if ( isset( $leaderboard['path'] ) && ! empty( $leaderboard['path'] ) ) {
+								$path2 = $leaderboard['path'];
+							}
+							$data['competition_challenges'][ $k ]['competition_leaderboards'][ $i ]['slug'] = $path2;
 						}
 					}
 				}
