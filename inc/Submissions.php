@@ -107,7 +107,6 @@ class Submissions {
 					$data[] = array(
 						'name'         => $line['line'],
 						'value'        => $score_values[ $k ] ?? '',
-						'score_values' => $score_values,
 					);
 				}
 			}

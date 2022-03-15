@@ -17,11 +17,12 @@ class Crons {
 
 	public function register_cron_activation() {
 		if ( ! wp_next_scheduled( 'iarai_cron_calculate_score_event' ) ) {
-			wp_schedule_event( time(), '30minutes', 'iarai_cron_calculate_score_event' );
+			wp_schedule_event( time(), '10minutes', 'iarai_cron_calculate_score_event' );
 		}
 	}
 
 	public function do_cron_scores() {
+
 		$competitions = get_terms(
 			array(
 				'taxonomy'   => 'competition',
@@ -88,6 +89,7 @@ class Crons {
 					$score_path = Submissions::get_score_path( $file_path );
 
 					if ( file_exists( $score_path ) ) {
+
 						$score = file_get_contents( $score_path );
 
 						// Check if we have multiple scores.
@@ -95,7 +97,7 @@ class Crons {
 						if ( $leaderboard && $leaderboard['competition_score_has_multiple'] !== 'no' ) {
 
 							$lines       = $leaderboard['competition_score_multiple'];
-							$line_number = 1;
+							$line_number = 0;
 
 							if ( $lines ) {
 								foreach ( $lines as $k => $line ) {
@@ -106,9 +108,11 @@ class Crons {
 							}
 
 							$scores = explode( "\n", $score );
+
+							update_post_meta( $submission->ID, '_score_full', $scores );
+
 							if ( isset( $scores[ $line_number ] ) ) {
 								$score = trim( $scores[ $line_number ] );
-								update_post_meta( $submission->ID, '_score_full', $scores );
 							}
 						}
 

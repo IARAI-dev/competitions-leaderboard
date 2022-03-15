@@ -537,7 +537,7 @@ class Plugin {
 			$score_full = 'To be calculated';
 		}
 
-		echo '<p><strong>Score full:</strong><br>' . implode( "<br>", $score_full ) . '<br>';
+		echo '<p><strong>Score full:</strong><br>' . implode( '<br>', $score_full ) . '<br>';
 
 		if ( get_post_meta( $post->ID, '_submission_file_path', true ) ) {
 			echo '<p><strong>File location</strong>:<br>';
@@ -838,7 +838,7 @@ class Plugin {
 	}
 
 	public static function get_log_content( $id ) {
-		
+
 		$log_path = self::get_log_path( $id );
 		if ( ! $log_path ) {
 			return false;
@@ -875,13 +875,24 @@ class Plugin {
 		}
 
 		foreach ( $competitions as $competition ) {
-			if ( sanitize_title( $competition['name'] ) === $challenge_slug ) {
+
+			$competition_path = sanitize_title( $competition['name'] );
+			if ( isset( $competition['path'] ) && ! empty( $competition['path'] ) ) {
+				$competition_path = $competition['path'];
+			}
+
+			if ( $competition_path === $challenge_slug ) {
 
 				if ( ! empty( $competition['competition_leaderboards'] ) ) {
 
 					foreach ( $competition['competition_leaderboards'] as $leaderboard ) {
 
-						if ( sanitize_title( $leaderboard['name'] ) === $leaderboard_slug ) {
+						$lb_path = sanitize_title( $leaderboard['name'] );
+						if ( isset( $leaderboard['path'] ) && ! empty( $leaderboard['path'] ) ) {
+							$lb_path = $leaderboard['path'];
+						}
+
+						if ( $lb_path === $leaderboard_slug ) {
 
 							return $leaderboard;
 						}
