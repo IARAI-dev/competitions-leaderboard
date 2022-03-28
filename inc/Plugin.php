@@ -10,6 +10,7 @@ class Plugin {
 		if ( is_null( self::$instance ) ) {
 			self::$instance = new Plugin();
 		}
+
 		return self::$instance;
 	}
 
@@ -36,7 +37,7 @@ class Plugin {
 					$search_term           = $wpdb->esc_like( $search_term );
 					$search_term           = ' \'%' . $search_term . '%\'';
 					$title_filter_relation = ( strtoupper( $wp_query->get( '_title_filter_relation' ) ) === 'OR' ? 'OR' : 'AND' );
-					$where                .= ' ' . $title_filter_relation . ' ' . $wpdb->posts . '.post_title LIKE ' . $search_term;
+					$where                 .= ' ' . $title_filter_relation . ' ' . $wpdb->posts . '.post_title LIKE ' . $search_term;
 				}
 
 				return $where;
@@ -151,20 +152,21 @@ class Plugin {
 
 		add_filter(
 			'query_vars',
-			function( $query_vars ) {
+			function ( $query_vars ) {
 				$query_vars[] = 'compage';
 				$query_vars[] = 'compslug';
 				$query_vars[] = 'compzone';
+
 				return $query_vars;
 			}
 		);
 
 		/**
 		 * Replace with competition template
-		*/
+		 */
 		add_action(
 			'template_redirect',
-			function() {
+			function () {
 				$competition      = get_query_var( 'compage' );
 				$competition_zone = get_query_var( 'compzone' );
 
@@ -219,13 +221,22 @@ class Plugin {
 
 			// disable sticky.
 			if ( ! empty( $competition_zone ) ) {
-				$header = str_replace( $replace_class, $replace_class . ' disable-sticky', $header );
-
 				// Prevent duplicate header id
-				$header = str_replace( 'id="header"', 'id="header-main-site"', $header );
+				$header = str_replace(
+					array(
+						$replace_class,
+						'id="header"'
+					),
+					array(
+						$replace_class . ' disable-sticky',
+						'id="header-main-site"'
+					),
+					$header
+				);
 			}
 
 			echo $header;
+
 			return;
 		}
 
@@ -254,10 +265,18 @@ class Plugin {
 
 		// disable sticky.
 		if ( ! empty( $competition_zone ) ) {
-			$div = str_replace( $replace_class, $replace_class . ' disable-sticky', $div );
-
 			// Prevent duplicate header id
-			$div = str_replace( 'id="header"', 'id="header-main-site"', $div );
+			$div = str_replace(
+				array(
+					$replace_class,
+					'id="header"'
+				),
+				array(
+					$replace_class . ' disable-sticky',
+					'id="header-main-site"'
+				),
+				$div
+			);
 		}
 
 		echo $div;
@@ -384,7 +403,7 @@ class Plugin {
 
 			$data = wp_remote_retrieve_body(
 				wp_remote_get( "https://indico.iarai.ac.at/export/categ/$cat.json" )
-				// ?occ=yes
+			// ?occ=yes
 			);
 
 			$data = @json_decode( $data, true );
@@ -537,7 +556,7 @@ class Plugin {
 			$score_full = 'To be calculated';
 		}
 
-		echo '<p><strong>Score full:</strong><br>' . implode( '<br>', $score_full ) . '<br>';
+		echo '<p><strong>Score full:</strong><br>' . print_r( $score_full, true ) . '<br>';
 
 		if ( get_post_meta( $post->ID, '_submission_file_path', true ) ) {
 			echo '<p><strong>File location</strong>:<br>';
@@ -768,12 +787,12 @@ class Plugin {
 		}
 
 		?>
-		<tr class="form-field">
-			<th scope="row" valign="top">
-				<label for="cat_description"><?php esc_html_e( 'Description', 'competitions-leaderboard' ); ?></label>
-			</th>
-			<td>
-				<div class="form-field term-meta-wrap">
+        <tr class="form-field">
+            <th scope="row" valign="top">
+                <label for="cat_description"><?php esc_html_e( 'Description', 'competitions-leaderboard' ); ?></label>
+            </th>
+            <td>
+                <div class="form-field term-meta-wrap">
 					<?php
 
 					$settings = array(
@@ -786,9 +805,9 @@ class Plugin {
 					wp_editor( wp_kses_post( $description ), 'cat_description', $settings );
 
 					?>
-				</div>
-			</td>
-		</tr>
+                </div>
+            </td>
+        </tr>
 
 		<?php
 
@@ -798,12 +817,12 @@ class Plugin {
 		global $current_screen;
 		if ( $current_screen->id === 'edit-competition' ) {
 			?>
-			<script type="text/javascript">
-				jQuery(function ($) {
-					$('textarea#tag-description, textarea#description').closest('.form-field').remove();
-				})
+            <script type="text/javascript">
+                jQuery(function ($) {
+                    $('textarea#tag-description, textarea#description').closest('.form-field').remove();
+                })
 
-			</script>
+            </script>
 			<?php
 		}
 	}
@@ -834,6 +853,7 @@ class Plugin {
 		}
 
 		$arr = explode( 'wp-content', $log_path );
+
 		return home_url( 'wp-content' . $arr[1] );
 	}
 
@@ -900,6 +920,7 @@ class Plugin {
 				}
 			}
 		}
+
 		return false;
 	}
 
@@ -949,7 +970,7 @@ class Plugin {
 
 		if ( ! is_user_logged_in() && $submission_option !== 'guests' ) {
 			echo '<p class="alert alert-warning submissions-no-user">Please ' .
-				 '<a class="kleo-show-login" href="' . wp_login_url() . '">login</a> to submit data.</p>';
+			     '<a class="kleo-show-login" href="' . wp_login_url() . '">login</a> to submit data.</p>';
 
 			return '';
 		}
@@ -983,30 +1004,30 @@ class Plugin {
 
 		ob_start();
 		?>
-		<tr>
-			<td class="submission-count"><?php echo $count; ?></td>
-			<td><?php echo esc_html( get_the_title( $submission ) ); ?></td>
-			<td><?php echo esc_html( $name ); ?></td>
-			<td>
+        <tr>
+            <td class="submission-count"><?php echo $count; ?></td>
+            <td><?php echo esc_html( get_the_title( $submission ) ); ?></td>
+            <td><?php echo esc_html( $name ); ?></td>
+            <td>
 				<?php echo get_post_meta( $submission->ID, '_score', true ); ?>
 				<?php if ( $is_current_user && self::get_log_content( $submission->ID ) !== false ) { ?>
-					<span data-placement="top" class="submission-log click-pop" data-toggle="popover"
-						  data-title="Submission info"
-						  data-content="<?php echo esc_attr( self::get_log_content( $submission->ID ) ); ?>">
+                    <span data-placement="top" class="submission-log click-pop" data-toggle="popover"
+                          data-title="Submission info"
+                          data-content="<?php echo esc_attr( self::get_log_content( $submission->ID ) ); ?>">
 							<i class="icon-info-circled"></i>
 						</span>
 
 
 				<?php } ?>
-			</td>
-			<td><?php echo get_the_date( 'M j, Y H:i', $submission->ID ); ?></td>
-		</tr>
+            </td>
+            <td><?php echo get_the_date( 'M j, Y H:i', $submission->ID ); ?></td>
+        </tr>
 		<?php
 		return ob_get_clean();
 	}
 
 	/**
-	 * @param null   $competition
+	 * @param null $competition
 	 * @param string $search_term
 	 * @param string $sort_order
 	 *
@@ -1044,24 +1065,24 @@ class Plugin {
 		$search_query = '';
 		if ( ! empty( $search_term ) ) {
 			$search_query = ' AND (' .
-							"(mt1.meta_key = '_submission_notes' AND mt1.meta_value LIKE '%%%s%%')" .
-							"OR {$wpdb->prefix}posts.post_title LIKE '%%%s%%'" .
-							')';
+			                "(mt1.meta_key = '_submission_notes' AND mt1.meta_value LIKE '%%%s%%')" .
+			                "OR {$wpdb->prefix}posts.post_title LIKE '%%%s%%'" .
+			                ')';
 		}
 
 		$submissions_query = "SELECT $wpdb->posts.* FROM $wpdb->posts" .
-							 " LEFT JOIN {$wpdb->prefix}term_relationships ON ({$wpdb->posts}.ID = {$wpdb->prefix}term_relationships.object_id)" .
-							 " INNER JOIN {$wpdb->prefix}postmeta ON ( {$wpdb->prefix}posts.ID = {$wpdb->prefix}postmeta.post_id )" .
-							 " INNER JOIN {$wpdb->prefix}postmeta AS mt1 ON ( {$wpdb->prefix}posts.ID = mt1.post_id )" .
-							 ' WHERE' .
-							 $terms_query .
-							 $author_query .
-							// " AND ( {$wpdb->prefix}postmeta.meta_key = '_score' AND {$wpdb->prefix}postmeta.meta_value > '0' )" .
-							 $search_query .
-							 " AND {$wpdb->prefix}posts.post_type = 'submission'" .
-							 " AND {$wpdb->prefix}posts.post_status = 'publish'" .
-							 " GROUP BY {$wpdb->prefix}posts.ID";
-							// " ORDER BY {$wpdb->prefix}postmeta.meta_value+0 " . $sort_order;
+		                     " LEFT JOIN {$wpdb->prefix}term_relationships ON ({$wpdb->posts}.ID = {$wpdb->prefix}term_relationships.object_id)" .
+		                     " INNER JOIN {$wpdb->prefix}postmeta ON ( {$wpdb->prefix}posts.ID = {$wpdb->prefix}postmeta.post_id )" .
+		                     " INNER JOIN {$wpdb->prefix}postmeta AS mt1 ON ( {$wpdb->prefix}posts.ID = mt1.post_id )" .
+		                     ' WHERE' .
+		                     $terms_query .
+		                     $author_query .
+		                     // " AND ( {$wpdb->prefix}postmeta.meta_key = '_score' AND {$wpdb->prefix}postmeta.meta_value > '0' )" .
+		                     $search_query .
+		                     " AND {$wpdb->prefix}posts.post_type = 'submission'" .
+		                     " AND {$wpdb->prefix}posts.post_status = 'publish'" .
+		                     " GROUP BY {$wpdb->prefix}posts.ID";
+		// " ORDER BY {$wpdb->prefix}postmeta.meta_value+0 " . $sort_order;
 
 		if ( $search_term ) {
 			$submissions_query = $wpdb->prepare(
@@ -1213,11 +1234,11 @@ class Plugin {
 				global $current_screen;
 
 				?>
-			<script type="text/javascript">
-				jQuery(document).ready(function ($) {
-					jQuery(jQuery(".wrap h1")[0]).append("<a onclick=\"window.location='" + window.location.href + "&export-csv'\" id='iarai-export-csv' class='add-new-h2'>Export CSV</a>");
-				});
-			</script>
+                <script type="text/javascript">
+                    jQuery(document).ready(function ($) {
+                        jQuery(jQuery(".wrap h1")[0]).append("<a onclick=\"window.location='" + window.location.href + "&export-csv'\" id='iarai-export-csv' class='add-new-h2'>Export CSV</a>");
+                    });
+                </script>
 				<?php
 			}
 		);

@@ -31,6 +31,7 @@ class Options {
 		'submission_leaderboard_deadline' => 'Submission to {LeaderboadName} leaderboard deadline',
 		'paper_reviews_start'             => 'Paper reviews start',
 		'dataset_available'               => '{DatasetName} available',
+		'custom' => '{Event name}',
 	);
 
 	public static $timeline_has_custom_text = array(
@@ -46,7 +47,7 @@ class Options {
 
 	public static function instance() {
 		if ( is_null( self::$instance ) ) {
-			self::$instance = new Plugin();
+			self::$instance = new Options();
 		}
 		return self::$instance;
 	}
@@ -348,6 +349,59 @@ class Options {
 									
 									Field::make( 'text', 'external_submission_type', 'Submission Type' )
 										->set_attribute( 'placeholder', 'Abstract' )
+										->set_conditional_logic(
+											array(
+												array(
+													'field'   => 'external_submission',
+													'value'   => '',
+													'compare' => '!=',
+												),
+											)
+										),
+
+									Field::make( 'date_time', 'external_release_date', 'Release Data Date' )
+										->set_width( 50 )
+										->set_input_format( 'Y-m-d H:i', 'Y-m-d H:i' )
+										->set_picker_options(
+											array(
+												'time_24hr' => true,
+												'enableSeconds' => false,
+											)
+										)->set_conditional_logic(
+											array(
+												array(
+													'field'   => 'external_submission',
+													'value'   => '',
+													'compare' => '!=',
+												),
+											)
+										),
+
+									Field::make( 'select', 'external_release_date_tz', 'Timezone' )
+										->set_width( 50 )
+										->add_options( array( 'CET'=>'CET', 'AoE' => 'AoE' ) )
+										->set_conditional_logic(
+											array(
+												array(
+													'field'   => 'external_submission',
+													'value'   => '',
+													'compare' => '!=',
+												),
+											)
+										),
+									
+									Field::make( 'date_time', 'external_hide_date', 'Hide Data Date' )
+										 ->set_width( 50 )
+										 ->set_input_format( 'Y-m-d H:i', 'Y-m-d H:i' )
+										 ->set_picker_options(
+											 array(
+												 'time_24hr' => true,
+												 'enableSeconds' => false,
+											 )
+										 ),
+									Field::make( 'select', 'external_hide_date_tz', 'Timezone' )
+										->set_width( 50 )
+										->add_options( array( 'CET'=>'CET', 'AoE' => 'AoE' ) )
 										->set_conditional_logic(
 											array(
 												array(
