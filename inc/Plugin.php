@@ -477,11 +477,13 @@ class Plugin {
 
 					$data['competition_challenges'][ $k ]['slug'] = $path;
 
+                    // Timeline text manipulations.
 					if ( ! empty( $challenge['timeline'] ) ) {
 						foreach ( $challenge['timeline'] as $j => $timeline ) {
 
 							$label = Options::$timeline_types[ $timeline['type'] ];
 
+                            // Replace the placeholder with custom text name. Except {CompetitionName}.
 							if ( in_array( $timeline['type'], Options::$timeline_has_custom_text ) ) {
 								$label = preg_replace( '/{(?!CompetitionName).*}/i', $timeline['extra_name'], $label );
 								unset( $data['competition_challenges'][ $k ]['timeline'][ $j ]['extra_name'] );
@@ -504,13 +506,25 @@ class Plugin {
 								foreach ( $leaderboard['data'] as $data_index => $l_data ) {
 
 									if ( ! empty( $l_data['release_date'] ) && strtotime( $l_data['release_date'] . ' ' . $l_data['release_date_tz'] ) > strtotime( 'now ' . $l_data['release_date_tz'] ) ) {
-                                        unset($data['competition_challenges'][ $k ]['competition_leaderboards'][ $i ]['data'][$data_index]);
+										unset( $data['competition_challenges'][ $k ]['competition_leaderboards'][ $i ]['data'][ $data_index ] );
 									} elseif ( ! empty( $l_data['hide_date'] ) && strtotime( $l_data['hide_date'] . ' ' . $l_data['hide_date_tz'] ) < strtotime( 'now ' . $l_data['hide_date_tz'] ) ) {
-										unset($data['competition_challenges'][ $k ]['competition_leaderboards'][ $i ]['data'][$data_index]);
+										unset( $data['competition_challenges'][ $k ]['competition_leaderboards'][ $i ]['data'][ $data_index ] );
 									}
 								}
 							}
 						}
+
+						// remove external submission data that is in the future or it passed the end date.
+						if ( isset( $challenge['external_submissions'] ) && ! empty( $challenge['external_submissions'] ) ) {
+							foreach ( $challenge['external_submissions'] as $index_external => $external ) {
+								if ( ! empty( $external['start_date'] ) && strtotime( $external['start_date'] . ' ' . $external['start_date_tz'] ) > strtotime( 'now ' . $external['start_date_tz'] ) ) {
+									unset( $data['competition_challenges'][ $k ]['external_submissions'][ $index_external ] );
+								} elseif ( ! empty( $external['end_date'] ) && strtotime( $external['end_date'] . ' ' . $external['end_date_tz'] ) < strtotime( 'now ' . $external['end_date_tz'] ) ) {
+									unset( $data['competition_challenges'][ $k ]['external_submissions'][ $index_external ] );
+								}
+							}
+						}
+
 					}
 				}
 			}
