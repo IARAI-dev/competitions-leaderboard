@@ -498,6 +498,18 @@ class Plugin {
 								$path2 = $leaderboard['path'];
 							}
 							$data['competition_challenges'][ $k ]['competition_leaderboards'][ $i ]['slug'] = $path2;
+
+							// remove data that is in the future or passed the hide date.
+							if ( isset( $leaderboard['data'] ) && ! empty( $leaderboard['data'] ) ) {
+								foreach ( $leaderboard['data'] as $data_index => $l_data ) {
+
+									if ( ! empty( $l_data['release_date'] ) && strtotime( $l_data['release_date'] . ' ' . $l_data['release_date_tz'] ) > strtotime( 'now ' . $l_data['release_date_tz'] ) ) {
+                                        unset($data['competition_challenges'][ $k ]['competition_leaderboards'][ $i ]['data'][$data_index]);
+									} elseif ( ! empty( $l_data['hide_date'] ) && strtotime( $l_data['hide_date'] . ' ' . $l_data['hide_date_tz'] ) < strtotime( 'now ' . $l_data['hide_date_tz'] ) ) {
+										unset($data['competition_challenges'][ $k ]['competition_leaderboards'][ $i ]['data'][$data_index]);
+									}
+								}
+							}
 						}
 					}
 				}
