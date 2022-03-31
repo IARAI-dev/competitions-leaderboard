@@ -27,10 +27,10 @@ class Options {
 		'competition_starts'              => 'Competition starts',
 		'competition_ends'                => 'Competition ends ',
 		'forums_open'                     => 'Forums open',
-		'leaderboard_opens'               => 'Leaderboard {LeaderboadName} opens',
+		'leaderboard_opens'               => '{LeaderboadName} Leaderboard opens',
 		'submission_leaderboard_deadline' => 'Submission to {LeaderboadName} leaderboard deadline',
 		'paper_reviews_start'             => 'Paper reviews start',
-		'dataset_available'               => '{DatasetName} available',
+		'dataset_available'               => '{DatasetName} data available',
 		'custom'                          => '{Event name}',
 	);
 
