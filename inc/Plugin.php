@@ -161,16 +161,32 @@ class Plugin {
 			}
 		);
 
+        add_action('kleo_header', function() {
+	        global $post;
+
+	        $competition       = get_query_var( 'compage' );
+	        $competition_zone  = get_query_var( 'compzone' );
+	        $shortcode_on_page = ! empty( $post ) && has_shortcode( $post->post_content, 'competitions_app' );
+
+	        // Add react header on non-competitions pages
+	        if ( empty( $competition_zone ) && empty( $competition ) && ( ! $shortcode_on_page || empty( $post ) ) ) {
+                echo do_shortcode( '[competitions_app]' );
+	        }
+
+	        remove_action( 'kleo_header', 'kleo_show_header' );
+
+        }, 9 );
+
 		/**
 		 * Replace with competition template
 		 */
 		add_action(
 			'template_redirect',
 			function () {
-				$competition      = get_query_var( 'compage' );
-				$competition_zone = get_query_var( 'compzone' );
-
 				global $post;
+
+				$competition       = get_query_var( 'compage' );
+				$competition_zone  = get_query_var( 'compzone' );
 				$shortcode_on_page = ! empty( $post ) && has_shortcode( $post->post_content, 'competitions_app' );
 
 				if ( $competition_zone || $competition || $shortcode_on_page ) {
@@ -193,7 +209,7 @@ class Plugin {
 		}
 
 		// Replace header with main site header
-		add_action( 'kleo_header', array( $this, 'main_site_header' ), 9 );
+		add_action( 'kleo_header', array( $this, 'main_site_header' ), 8 );
 
 		// set logo back to regular one
 		remove_all_filters( 'kleo_logo_href', 10 );
@@ -477,13 +493,13 @@ class Plugin {
 
 					$data['competition_challenges'][ $k ]['slug'] = $path;
 
-                    // Timeline text manipulations.
+					// Timeline text manipulations.
 					if ( ! empty( $challenge['timeline'] ) ) {
 						foreach ( $challenge['timeline'] as $j => $timeline ) {
 
 							$label = Options::$timeline_types[ $timeline['type'] ];
 
-                            // Replace the placeholder with custom text name. Except {CompetitionName}.
+							// Replace the placeholder with custom text name. Except {CompetitionName}.
 							if ( in_array( $timeline['type'], Options::$timeline_has_custom_text ) ) {
 								$label = preg_replace( '/{(?!CompetitionName).*}/i', $timeline['extra_name'], $label );
 								unset( $data['competition_challenges'][ $k ]['timeline'][ $j ]['extra_name'] );

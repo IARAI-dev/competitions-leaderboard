@@ -39,10 +39,8 @@ if ( ! empty( $competition_slug ) && get_term_by( 'slug', $competition_slug, 'co
 $zone_name = str_replace( str_replace( array( 'https://', 'http://' ), '', home_url( '/' ) ), '', $_SERVER['HTTP_HOST'] . explode( '?', $_SERVER['REQUEST_URI'], 2 )[0] );
 $zone_name = ltrim( str_replace( $competition_link, '', $zone_name ), '/' );
 
-// If on homepage. Remove site header.
-if ( empty( $zone ) ) {
-	remove_action( 'kleo_header', 'kleo_show_header' );
-}
+// Remove site header.
+remove_action( 'kleo_header', 'kleo_show_header' );
 
 get_header(); ?>
 
