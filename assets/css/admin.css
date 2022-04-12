@@ -10,3 +10,7 @@
     background: #fff;
     margin-bottom: 0;
 }
+
+#delete-link {
+    display: none;
+}
