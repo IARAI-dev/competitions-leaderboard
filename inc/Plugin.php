@@ -16,7 +16,13 @@ class Plugin {
 
 	public function __construct() {
 
-		new Options();
+		new Options(
+			[
+				'fieldControllers' => [
+					'events' => new SpecialSession(),
+				],
+			]
+		);
 		new Crons();
 		new Terms();
 		new Submissions();

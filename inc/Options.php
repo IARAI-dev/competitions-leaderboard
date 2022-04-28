@@ -44,6 +44,8 @@ class Options {
 		'custom'
 	);
 
+	private $params;
+
 	protected static $instance = null;
 
 	public static function instance() {
@@ -54,7 +56,8 @@ class Options {
 		return self::$instance;
 	}
 
-	public function __construct() {
+	public function __construct($params) {
+		$this->params = $params;
 		add_action( 'plugins_loaded', array( $this, 'plugins_loaded' ) );
 		add_action( 'plugins_loaded', array( $this, 'register_custom_fields' ), 12 );
 
@@ -722,11 +725,7 @@ class Options {
 				)
 				->add_tab(
 					__( 'Events' ),
-					array(
-						Field::make( 'text', 'competition_indico_category', 'Indico Events Category ID' )
-						     ->set_help_text( 'Enter the Category ID from Indico where we should get the events from' ),
-
-					)
+					$this->params['fieldControllers']['events']->register_custom_fields(),
 				)
 				->add_tab(
 					__( 'Deprecated' ),
