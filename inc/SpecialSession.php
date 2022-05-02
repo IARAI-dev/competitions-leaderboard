@@ -67,6 +67,15 @@ class SpecialSession {
 						'label' => 'Location'
 					],
 					[
+						'type' => 'select',
+						'name' => 'type',
+						'label' => 'Event Type',
+						'options' => [
+							'public' => 'Public',
+							'private' => 'Private',
+						],
+					],
+					[
 						'type' => 'complex',
 						'name' => 'event_time',
 						'label' => 'Event Time',
