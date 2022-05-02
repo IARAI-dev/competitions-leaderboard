@@ -107,6 +107,18 @@ class Plugin {
 						},
 					)
 				);
+
+				register_rest_route(
+					'contact/v1',
+					'/send',
+					array(
+						'methods'             => 'POST',
+						'callback'            => array( $this, 'api_post_contact_send' ),
+						'permission_callback' => function () {
+							return true;
+						},
+					)
+				);
 			}
 		);
 
@@ -302,6 +314,113 @@ class Plugin {
 		}
 
 		echo $div;
+	}
+
+	/**
+	 * Post Contact Send
+	 * Method: POST
+	 * Data: [
+			'name' => null,
+			'email' => null,
+			'message' => null,
+		]
+	 * @param \WP_REST_Request $request
+	 * 
+	 * @return \WP_REST_Response
+	 */
+	public function api_post_contact_send($request) {
+		$response = $this->api_prepare_response();
+
+		$data = [
+			'name' => null,
+			'email' => null,
+			'message' => null,
+		];
+
+		$dataValidator = [
+			'name' => [
+				'validator' => function($name) {
+					return !empty(sanitize_text_field($name));
+				},
+				'message' => 'Name is required.',
+				'filter' => function($name) {
+					return sanitize_text_field($name);
+				}
+			],
+			'email' => [
+				'validator' => function($email) {
+					$email = sanitize_text_field($email);
+					return (
+						!empty($email) && 
+						is_email($email)
+					);
+				},
+				'message' => 'Email is invalid.',
+				'filter' => function($email) {
+					return sanitize_text_field($email);
+				}
+			],
+			'message' => [
+				'validator' => function($message) {
+					return !empty(sanitize_textarea_field($message));
+				},
+				'message' => 'Message is required.',
+				'filter' => function($message) {
+					return sanitize_textarea_field($message);
+				}
+			],
+		];
+
+		$errors = [];
+
+		foreach ($data as $key => $value) {
+
+			if (empty($request[$key])) { continue; }
+
+			if (empty($dataValidator[$key]['validator']($request[$key]))) {
+				$errors[$key] = $dataValidator[$key]['message'];
+				continue;
+			}
+
+			$data[$key] = $request[$key];
+		}
+
+		if (!empty($errors)) {
+			$response['data']['errors'] = $errors;
+			return $this->api_return_response($response);
+		}
+
+		$emailTemplate = '
+		Name: [NAME]
+		Email: [EMAIL]
+		Message: [MESSAGE]
+		';
+
+		foreach ($data as $key => $value) {
+			$tag = strtoupper('['. $key .']');
+			$emailTemplate = str_replace($tag, $value, $emailTemplate);
+		}
+
+		$emailData = [
+			'to' => get_bloginfo('admin_email'),
+			'subject' => 'New email from '. get_bloginfo('name') .' website',
+			'body' => trim($emailTemplate),
+		];
+
+		$isEmailSent = wp_mail(
+			$emailData['to'],
+			$emailData['subject'],
+			$emailData['body']
+		);
+
+		if (!$isEmailSent) {
+			$response['data']['errors']['emailSendRequest'] = 'Email failed sending.';
+			return $this->api_return_response($response);
+		}
+
+		$response['data']['success'] = true;
+		$response['status'] = true;
+		return $this->api_return_response($response);
 	}
 
 	/**
@@ -1407,4 +1526,38 @@ class Plugin {
 		}
 	}
 
+	/**
+	 * API: Prepare Response
+	 * 
+	 * @return array $response - Response Structure
+	 */
+	public function api_prepare_response() {
+		return [
+			'data' => [
+				'success' => false,
+				'errors' => [],
+			],
+			'status' => 400,
+		];
+	}
+
+	/**
+	 * API: Return Response
+	 * @param $response => [
+			'data' => [
+				'success' => false,
+				'errors' => [],
+			],
+			'status' => 400,
+		]
+	 * @return WP_REST_Response
+	 */
+	public function api_return_response($response) {
+		$wp_response = new \WP_REST_Response(
+			$response['data'],
+			$response['status']
+		);
+
+		return $wp_response;
+	}
 }
