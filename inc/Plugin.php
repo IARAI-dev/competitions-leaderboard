@@ -339,6 +339,7 @@ class Plugin {
 
 		$dataValidator = [
 			'name' => [
+				'required' => true,
 				'validator' => function($name) {
 					return !empty(sanitize_text_field($name));
 				},
@@ -348,6 +349,7 @@ class Plugin {
 				}
 			],
 			'email' => [
+				'required' => true,
 				'validator' => function($email) {
 					$email = sanitize_text_field($email);
 					return (
@@ -361,6 +363,7 @@ class Plugin {
 				}
 			],
 			'message' => [
+				'required' => true,
 				'validator' => function($message) {
 					return !empty(sanitize_textarea_field($message));
 				},
@@ -375,9 +378,16 @@ class Plugin {
 
 		foreach ($data as $key => $value) {
 
-			if (empty($request[$key])) { continue; }
-
-			if (empty($dataValidator[$key]['validator']($request[$key]))) {
+			if (
+				(
+					!empty($dataValidator[$key]['required']) &&
+					empty($request[$key]) 
+				) ||
+				(
+					!empty($request[$key]) &&
+					empty($dataValidator[$key]['validator']($request[$key]))
+				) 
+			) {
 				$errors[$key] = $dataValidator[$key]['message'];
 				continue;
 			}
