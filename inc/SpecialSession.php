@@ -28,16 +28,26 @@ class SpecialSession {
 				],
 				'min' => 1,
 				'layout' => 'tabbed-vertical',
+				'headerTemplate' => ' <%- [PREFIX]name ? [PREFIX]name : ($_index+1) %>',
 				'fields' => [
 					[
-						'type' => 'date',
-						'name' => 'start_date',
-						'label' => 'Start Date'
-					],
-					[
-						'type' => 'date',
-						'name' => 'end_date',
-						'label' => 'End Date'
+						'type' => 'complex',
+						'name' => 'publish_dates',
+						'label' => 'Publish Dates',
+						'labels' => [
+							'singular_name' => 'Publish Date',
+							'plural_name' => 'Publish Dates',
+						],
+						'min' => 1,
+						'layout' => 'tabbed-horizontal',
+						'headerTemplate' => ' <%- [PREFIX]publish_date ? [PREFIX]publish_date : ($_index+1) %>',
+						'fields' => [
+							[
+								'type' => 'date',
+								'name' => 'publish_date',
+								'label' => 'Publish Date',
+							],
+						],
 					],
 					[
 						'type' => 'text',
@@ -62,6 +72,15 @@ class SpecialSession {
 						'label' => 'Date'
 					],
 					[
+						'type' => 'select',
+						'name' => 'presentation_type',
+						'label' => 'Event Presentation Type',
+						'options' => [
+							'physical' => 'Physical',
+							'virtual' => 'Virtual',
+						],
+					],
+					[
 						'type' => 'text',
 						'name' => 'location',
 						'label' => 'Location'
@@ -76,23 +95,6 @@ class SpecialSession {
 						],
 					],
 					[
-						'type' => 'complex',
-						'name' => 'event_time',
-						'label' => 'Event Time',
-						'labels' => [
-							'singular_name' => 'Event Time',
-							'plural_name' => 'Events Times',
-						],
-						'min' => 1,
-						'fields' => [
-							[
-								'type' => 'time',
-								'name' => 'event_time_single',
-								'label' => 'Event Time: Single'
-							],
-						],
-					],
-					[
 						'type' => 'rich_text',
 						'name' => 'event_description',
 						'label' => 'Event Description'
@@ -100,12 +102,13 @@ class SpecialSession {
 					[
 						'type' => 'complex',
 						'name' => 'event_sessions',
-						'label' => 'Event Session',
+						'label' => 'Event Sessions',
 						'labels' => [
 							'singular_name' => 'Event Session',
-							'plural_name' => 'Events Sessions',
+							'plural_name' => 'Event Sessions',
 						],
 						'min' => 1,
+						'headerTemplate' => ' <%- [PREFIX]event_session_name ? [PREFIX]event_session_name : ($_index+1) %>',
 						'fields' => [
 							[
 								'type' => 'text',
@@ -132,49 +135,56 @@ class SpecialSession {
 								'name' => 'event_session_chair',
 								'label' => 'Event Session: Chair'
 							],
-						],
-					],
-					[
-						'type' => 'complex',
-						'name' => 'event_sub_sessions',
-						'label' => 'Event Sub Session',
-						'labels' => [
-							'singular_name' => 'Event Sub Session',
-							'plural_name' => 'Events Sub Sessions',
-						],
-						'min' => 1,
-						'fields' => [
-							[
-								'type' => 'text',
-								'name' => 'event_sub_session_name',
-								'label' => 'Event Session: Name'
-							],
 							[
 								'type' => 'complex',
-								'name' => 'event_sub_session_partners',
-								'label' => 'Event Sub Session: Partner',
+								'name' => 'event_sub_sessions',
+								'label' => 'Event Sub Sessions',
 								'labels' => [
-									'singular_name' => 'Event Sub Session: Partner',
-									'plural_name' => 'Events Sub Sessions: Partners',
+									'singular_name' => 'Event Sub Session',
+									'plural_name' => 'Event Sub Sessions',
 								],
 								'min' => 1,
+								'headerTemplate' => ' <%- [PREFIX]event_sub_session_name ? [PREFIX]event_sub_session_name : ($_index+1) %>',
 								'fields' => [
 									[
 										'type' => 'text',
-										'name' => 'event_sub_session_partner_name',
-										'label' => 'Event Sub Session: Partner Name',
+										'name' => 'event_sub_session_name',
+										'label' => 'Event Sub Session: Name'
+									],
+									[
+										'type' => 'complex',
+										'name' => 'event_sub_session_speakers',
+										'label' => 'Event Sub Session: Speakers',
+										'labels' => [
+											'singular_name' => 'Event Sub Session: Speaker',
+											'plural_name' => 'Event Sub Session: Speakers',
+										],
+										'min' => 1,
+										'headerTemplate' => ' <%- [PREFIX]event_sub_session_speaker_name ? [PREFIX]event_sub_session_speaker_name : ($_index+1) %>',
+										'fields' => [
+											[
+												'type' => 'text',
+												'name' => 'event_sub_session_speaker_name',
+												'label' => 'Event Sub Session: Speaker Name',
+											],
+											[
+												'type' => 'text',
+												'name' => 'event_sub_session_speaker_affiliation',
+												'label' => 'Event Sub Session: Speaker Affiliation',
+											],
+										],
+									],
+									[
+										'type' => 'text',
+										'name' => 'event_sub_session_duration',
+										'label' => 'Event Sub Session: Duration'
+									],
+									[
+										'type' => 'rich_text',
+										'name' => 'event_sub_session_description',
+										'label' => 'Event Sub Session: Description'
 									],
 								],
-							],
-							[
-								'type' => 'text',
-								'name' => 'event_sub_session_duration',
-								'label' => 'Event Sub Session: Duration'
-							],
-							[
-								'type' => 'rich_text',
-								'name' => 'event_sub_session_description',
-								'label' => 'Event Sub Session: Description'
 							],
 						],
 					],
@@ -191,11 +201,27 @@ class SpecialSession {
 						'type' => 'text',
 						'name' => 'registration_type_internal_event_id',
 						'label' => 'RT: Internal - Event ID',
+						'condition' => [
+							'relation' => 'AND',
+							[
+								'field' => '[PREFIX]registration_type',
+								'value' => 'internal',
+								'compare' => '=',
+							]
+						],
 					],
 					[
 						'type' => 'text',
 						'name' => 'registration_type_external_url',
 						'label' => 'RT: External - URL',
+						'condition' => [
+							'relation' => 'AND',
+							[
+								'field' => '[PREFIX]registration_type',
+								'value' => 'external',
+								'compare' => '=',
+							]
+						],
 					],
 				],
 			],
@@ -219,6 +245,12 @@ class SpecialSession {
 				$this->namePrefix . $fieldSetup['name'],
 				_($fieldSetup['label'])
 			);
+
+			if (!empty($fieldSetup['condition'])) {
+				$field->set_conditional_logic(
+					$this->prepareCondition($fieldSetup['condition'])
+				);
+			}
 
 			if (
 				$fieldSetup['type'] === 'image' &&
@@ -254,11 +286,45 @@ class SpecialSession {
 				if (!empty($fieldSetup['fields'])) {
 					$field->add_fields($this->prepareFields($fieldSetup['fields']));
 				}
+
+				if (!empty($fieldSetup['headerTemplate'])) {
+					$field->set_header_template(
+						$this->prepareTemplate($fieldSetup['headerTemplate'])
+					);
+				}
 			}
 
 			$container[] = $field;
 		}
 
 		return $container;
+	}
+
+	function prepareTemplate($template) {
+		$tags = [
+			'prefix' => $this->namePrefix,
+		];
+
+		foreach ($tags as $tagName => $tagValue) {
+			$tagName = strtoupper('['. $tagName .']');
+			$template = str_replace($tagName, $tagValue, $template);
+		}
+
+		return $template;
+	}
+
+	function prepareCondition($condition) {
+		if (empty($condition)) { return $condition; }
+
+		foreach ($condition as $key => $value) {
+			
+			if (!is_array($value)) {
+				$condition[$key] = $this->prepareTemplate($value);
+			} else {
+				$condition[$key] = $this->prepareCondition($value);
+			}
+		}
+
+		return $condition;
 	}
 }
