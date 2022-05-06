@@ -550,27 +550,29 @@ class Plugin {
 		if ( $page === 'events' ) {
 			$events = array();
 
-			$cat = ! empty( carbon_get_term_meta( $competition->term_id, 'competition_indico_category' ) ) ? carbon_get_term_meta( $competition->term_id, 'competition_indico_category' ) : 0;
+			// TODO: Reintegrate Events API once fields are approved
+			// // ToDo: Move to a single DB query usage
+			// $cat = ! empty( carbon_get_term_meta( $competition->term_id, 'competition_indico_category' ) ) ? carbon_get_term_meta( $competition->term_id, 'competition_indico_category' ) : 0;
 
-			$data = wp_remote_retrieve_body(
-				wp_remote_get( "https://indico.iarai.ac.at/export/categ/$cat.json" )
-			// ?occ=yes
-			);
+			// $data = wp_remote_retrieve_body(
+			// 	wp_remote_get( "https://indico.iarai.ac.at/export/categ/$cat.json" )
+			// // ?occ=yes
+			// );
 
-			$data = @json_decode( $data, true );
+			// $data = @json_decode( $data, true );
 
-			if ( ! empty( $data['results'] ) ) {
-				foreach ( $data['results'] as $event ) {
-					$events[] = array(
-						'title'       => $event['title'],
-						'description' => $event['description'],
-						'startDate'   => $event['startDate'],
-						'endDate'     => $event['endDate'],
-						'location'    => $event['location'],
-						'url'         => $event['url'],
-					);
-				}
-			}
+			// if ( ! empty( $data['results'] ) ) {
+			// 	foreach ( $data['results'] as $event ) {
+			// 		$events[] = array(
+			// 			'title'       => $event['title'],
+			// 			'description' => $event['description'],
+			// 			'startDate'   => $event['startDate'],
+			// 			'endDate'     => $event['endDate'],
+			// 			'location'    => $event['location'],
+			// 			'url'         => $event['url'],
+			// 		);
+			// 	}
+			// }
 
 			return new \WP_REST_Response( $events, 200 );
 		}
