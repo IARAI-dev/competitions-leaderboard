@@ -31,23 +31,9 @@ class SpecialSession {
 				'headerTemplate' => ' <%- [PREFIX]name ? [PREFIX]name : ($_index+1) %>',
 				'fields' => [
 					[
-						'type' => 'complex',
-						'name' => 'publish_dates',
-						'label' => 'Publish Dates',
-						'labels' => [
-							'singular_name' => 'Publish Date',
-							'plural_name' => 'Publish Dates',
-						],
-						'min' => 1,
-						'layout' => 'tabbed-horizontal',
-						'headerTemplate' => ' <%- [PREFIX]publish_date ? [PREFIX]publish_date : ($_index+1) %>',
-						'fields' => [
-							[
-								'type' => 'date',
-								'name' => 'publish_date',
-								'label' => 'Publish Date',
-							],
-						],
+						'type' => 'date',
+						'name' => 'publish_date',
+						'label' => 'Publish Date',
 					],
 					[
 						'type' => 'text',
