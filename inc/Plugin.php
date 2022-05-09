@@ -570,6 +570,12 @@ class Plugin {
 			$namePrefix = \CLead\SpecialSession::getNamePrefix();
 			$userIsLogged = $this->isUserLoggedIn();
 
+			$convertMap = [
+				'duration' => function($duration) {
+					return intval($duration);
+				},
+			];
+
 			$eventFeMap = [
 				'background' => 'image',
 				'logo' => 'logo',
@@ -586,6 +592,8 @@ class Plugin {
 			$sessionFeMap = [
 				'event_session_name' => 'name',
 				'event_session_date' => 'date',
+				'event_session_from_time' => 'from',
+				'event_session_to_time' => 'to',
 				'event_session_chair' => 'chair',
 				'event_sub_sessions' => 'timeline',
 			];
@@ -616,7 +624,7 @@ class Plugin {
 					)
 				) { continue; }
 
-				$eventDataObjectFe = $this->mapData($eventSetup, $eventFeMap, $namePrefix);
+				$eventDataObjectFe = $this->mapData($eventSetup, $eventFeMap, $convertMap, $namePrefix);
 
 				if (empty($eventDataObjectFe['sessions'])) {
 					$events[] = $eventDataObjectFe;
@@ -624,7 +632,7 @@ class Plugin {
 				}
 
 				foreach ($eventDataObjectFe['sessions'] as $sessionIndex => $sessionSetup) {
-					$session = $this->mapData($sessionSetup, $sessionFeMap, $namePrefix);
+					$session = $this->mapData($sessionSetup, $sessionFeMap, $convertMap, $namePrefix);
 
 					if (empty($session['timeline'])) {
 						$eventDataObjectFe['sessions'][$sessionIndex] = $session;
@@ -632,7 +640,7 @@ class Plugin {
 					}
 
 					foreach ($session['timeline'] as $timelineIndex => $timelineSetup) {
-						$timeline = $this->mapData($timelineSetup, $timelineMap, $namePrefix);
+						$timeline = $this->mapData($timelineSetup, $timelineMap, $convertMap, $namePrefix);
 
 						if (empty($timeline['speakers'])) {
 							$session['timeline'][$timelineIndex] = $timeline;
@@ -640,7 +648,7 @@ class Plugin {
 						}
 
 						foreach ($timeline['speakers'] as $speakerIndex => $speakerSetup) {
-							$speaker = $this->mapData($speakerSetup, $speakerMap, $namePrefix);
+							$speaker = $this->mapData($speakerSetup, $speakerMap, $convertMap, $namePrefix);
 							$timeline['speakers'][$speakerIndex] = $speaker;
 						}
 
@@ -1656,13 +1664,14 @@ class Plugin {
 	 * Helper: mapData()
 	 * @param array|mixed $data
 	 * @param array|mixed $map ($mapKey => $data[$mapKey], $mapValue => $result[$mapValue])
+	 * @param array|mixed $convertMap ($mapKey => $data[$mapKey], $mapValue => fn())
 	 * @param string $namePrefix (in case $namePrefix is empty, default will be used as an empty string)
 	 * 
 	 * @return array|mixed
 	 */
-	public function mapData($data, $map, $namePrefix = '') {
+	public function mapData($data, $map, $convertMap = [], $namePrefix = '') {
 		$result = [];
-		
+
 		if (
 			empty($data) ||
 			empty($map)
@@ -1673,7 +1682,11 @@ class Plugin {
 			
 			if (empty($data[$mapKey])) { continue; }
 
-			$result[$mapValue]  = $data[$mapKey];
+			$result[$mapValue] = (
+				!empty($convertMap[$mapValue]) ?
+				$convertMap[$mapValue]($data[$mapKey]) :
+				$data[$mapKey]
+			);
 		}
 
 		return $result;

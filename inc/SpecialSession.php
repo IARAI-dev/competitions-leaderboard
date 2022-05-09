@@ -164,7 +164,11 @@ class SpecialSession {
 									[
 										'type' => 'text',
 										'name' => 'event_sub_session_duration',
-										'label' => 'Event Sub Session: Duration'
+										'label' => 'Event Sub Session: Duration',
+										'attributes' => [
+											'type' => 'number',
+											'min' => 0,
+										],
 									],
 									[
 										'type' => 'rich_text',
@@ -237,6 +241,13 @@ class SpecialSession {
 				$field->set_conditional_logic(
 					$this->prepareCondition($fieldSetup['condition'])
 				);
+			}
+
+			if (!empty($fieldSetup['attributes'])) {
+
+				foreach ($fieldSetup['attributes'] as $attributeKey => $attributeValue) {
+					$field->set_attribute($attributeKey, $attributeValue);
+				}
 			}
 
 			if (
