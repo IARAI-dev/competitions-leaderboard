@@ -6,6 +6,8 @@ class Plugin {
 
 	protected static $instance = null;
 
+	private static $inDevelopment;
+
 	public static function instance() {
 		if ( is_null( self::$instance ) ) {
 			self::$instance = new Plugin();
@@ -15,6 +17,11 @@ class Plugin {
 	}
 
 	public function __construct() {
+
+		// APIs in Development
+		self::$inDevelopment = [
+			'events'
+		];
 
 		new Options(
 			[
@@ -509,6 +516,7 @@ class Plugin {
 		}
 
 		$page = sanitize_text_field( $_GET['page'] );
+		$isDev = !empty($_GET['isDev']);
 
 		$args = array(
 			'taxonomy'   => 'competition',
@@ -549,9 +557,15 @@ class Plugin {
 
 		if ( $page === 'events' ) {
 			$events = [];
+
+			if (
+				!$isDev &&
+				in_array($page, self::$inDevelopment)
+			) { return new \WP_REST_Response( $events, 200 ); }
+
 			$eventsSetup = carbon_get_term_meta($competition->term_id, 'special_session_event_setup');
 
-			if (empty($eventsSetup)) { return $events; }
+			if (empty($eventsSetup)) { return new \WP_REST_Response( $events, 200 ); }
 
 			$namePrefix = \CLead\SpecialSession::getNamePrefix();
 			$userIsLogged = $this->isUserLoggedIn();
