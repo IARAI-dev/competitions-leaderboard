@@ -548,31 +548,96 @@ class Plugin {
 		}
 
 		if ( $page === 'events' ) {
-			$events = array();
+			$events = [];
+			$eventsSetup = carbon_get_term_meta($competition->term_id, 'special_session_event_setup');
 
-			// TODO: Reintegrate Events API once fields are approved
-			// // ToDo: Move to a single DB query usage
-			// $cat = ! empty( carbon_get_term_meta( $competition->term_id, 'competition_indico_category' ) ) ? carbon_get_term_meta( $competition->term_id, 'competition_indico_category' ) : 0;
+			if (empty($eventsSetup)) { return $events; }
 
-			// $data = wp_remote_retrieve_body(
-			// 	wp_remote_get( "https://indico.iarai.ac.at/export/categ/$cat.json" )
-			// // ?occ=yes
-			// );
+			$namePrefix = \CLead\SpecialSession::getNamePrefix();
+			$userIsLogged = $this->isUserLoggedIn();
 
-			// $data = @json_decode( $data, true );
+			$eventFeMap = [
+				'background' => 'image',
+				'logo' => 'logo',
+				'name' => 'name',
+				'date' => 'date',
+				'location' => 'location',
+				'event_description' => 'description',
+				'event_sessions' => 'sessions',
+				'registration_type' => 'registrationType',
+				'registration_type_internal_event_id' => 'internalEventId',
+				'registration_type_external_url' => 'externalUrl',
+			];
 
-			// if ( ! empty( $data['results'] ) ) {
-			// 	foreach ( $data['results'] as $event ) {
-			// 		$events[] = array(
-			// 			'title'       => $event['title'],
-			// 			'description' => $event['description'],
-			// 			'startDate'   => $event['startDate'],
-			// 			'endDate'     => $event['endDate'],
-			// 			'location'    => $event['location'],
-			// 			'url'         => $event['url'],
-			// 		);
-			// 	}
-			// }
+			$sessionFeMap = [
+				'event_session_name' => 'name',
+				'event_session_date' => 'date',
+				'event_session_chair' => 'chair',
+				'event_sub_sessions' => 'timeline',
+			];
+
+			$timelineMap = [
+				'event_sub_session_name' => 'name',
+				'event_sub_session_speakers' => 'speakers',
+				'event_sub_session_duration' => 'duration',
+				'event_sub_session_description' => 'description',
+			];
+
+			$speakerMap = [
+				'event_sub_session_speaker_name' => 'name',
+				'event_sub_session_speaker_affiliation' => 'affiliation',
+			];
+
+			foreach ($eventsSetup as $eventSetup) {
+
+				$currentSerial = time();
+				$eventPublishDateSerial = strtotime($eventSetup[$namePrefix .'publish_date']);
+				$eventType = $eventSetup[$namePrefix .'type'];
+
+				if (
+					!$userIsLogged && 
+					(
+						$currentSerial < $eventPublishDateSerial ||
+						$eventType !== 'public'
+					)
+				) { continue; }
+
+				$eventDataObjectFe = $this->mapData($eventSetup, $eventFeMap, $namePrefix);
+
+				if (empty($eventDataObjectFe['sessions'])) {
+					$events[] = $eventDataObjectFe;
+					continue;
+				}
+
+				foreach ($eventDataObjectFe['sessions'] as $sessionIndex => $sessionSetup) {
+					$session = $this->mapData($sessionSetup, $sessionFeMap, $namePrefix);
+
+					if (empty($session['timeline'])) {
+						$eventDataObjectFe['sessions'][$sessionIndex] = $session;
+						continue;
+					}
+
+					foreach ($session['timeline'] as $timelineIndex => $timelineSetup) {
+						$timeline = $this->mapData($timelineSetup, $timelineMap, $namePrefix);
+
+						if (empty($timeline['speakers'])) {
+							$session['timeline'][$timelineIndex] = $timeline;
+							continue;
+						}
+
+						foreach ($timeline['speakers'] as $speakerIndex => $speakerSetup) {
+							$speaker = $this->mapData($speakerSetup, $speakerMap, $namePrefix);
+							$timeline['speakers'][$speakerIndex] = $speaker;
+						}
+
+						$session['timeline'][$timelineIndex] = $timeline;
+					}
+					
+					$eventDataObjectFe['sessions'][$sessionIndex] = $session;
+				}
+
+				$events[] = $eventDataObjectFe;
+			}
 
 			return new \WP_REST_Response( $events, 200 );
 		}
@@ -1572,4 +1637,68 @@ class Plugin {
 
 		return $wp_response;
 	}
+
+	/**
+	 * Helper: mapData()
+	 * @param array|mixed $data
+	 * @param array|mixed $map ($mapKey => $data[$mapKey], $mapValue => $result[$mapValue])
+	 * @param string $namePrefix (in case $namePrefix is empty, default will be used as an empty string)
+	 * 
+	 * @return array|mixed
+	 */
+	public function mapData($data, $map, $namePrefix = '') {
+		$result = [];
+		
+		if (
+			empty($data) ||
+			empty($map)
+		) { return $result; }
+
+		foreach ($map as $mapKey => $mapValue) {
+			$mapKey = $namePrefix . $mapKey;
+			
+			if (empty($data[$mapKey])) { continue; }
+
+			$result[$mapValue]  = $data[$mapKey];
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Helper: isUserLoggedIn()
+	 * @return bool
+	 */
+	public function isUserLoggedIn() {
+		$result = false;
+
+		if (empty($_COOKIE)) { return $result; }
+
+		$lookupString = 'wordpress_logged_in_';
+
+		foreach ($_COOKIE as $cookieKey => $cookieValue) {
+
+			if (strpos($cookieKey, $lookupString) !== false) {
+				$result = true;
+				break;
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Debugger: DumpDie()
+	 * @param array|mixed $data
+	 * @param bool $shouldDie (default = true)
+	 */
+	public function dd($data, $shouldDie = true) {
+        echo '<pre>';
+        var_dump($data);
+        echo '</pre>';
+        
+        if ($shouldDie) {
+            die('');
+        }
+    }
 }

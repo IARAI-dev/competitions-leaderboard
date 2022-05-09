@@ -7,6 +7,7 @@ use Carbon_Fields\Field;
 class SpecialSession {
 
 	private $namePrefix = 'special_session_';
+	public static $namePrefixPublic = 'special_session_';
 
 	/**
 	 * @var null|\WP_User
@@ -312,5 +313,9 @@ class SpecialSession {
 		}
 
 		return $condition;
+	}
+
+	public static function getNamePrefix() {
+		return self::$namePrefixPublic;
 	}
 }
