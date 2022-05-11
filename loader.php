@@ -8,29 +8,29 @@ Text Domain: competitions-leaderboard
 
 // Define Constants
 
-if ( ! defined( 'CLEAD_VERSION' ) ) {
-	define( 'CLEAD_VERSION', '2.1.0' );
+if ( ! defined( 'CLEAD_VERSION_2' ) ) {
+	define( 'CLEAD_VERSION_2', '2.1.0' );
 }
 
 // Plugin Folder Path
-if ( ! defined( 'CLEAD_PATH' ) ) {
-	define( 'CLEAD_PATH', plugin_dir_path( __FILE__ ) );
+if ( ! defined( 'CLEAD_PATH_2' ) ) {
+	define( 'CLEAD_PATH_2', plugin_dir_path( __FILE__ ) );
 }
 
 // Plugin Folder URL
-if ( ! defined( 'CLEAD_URL' ) ) {
-	define( 'CLEAD_URL', plugin_dir_url( __FILE__ ) );
+if ( ! defined( 'CLEAD_URL_2' ) ) {
+	define( 'CLEAD_URL_2', plugin_dir_url( __FILE__ ) );
 }
 
 // Plugin Root File
-if ( ! defined( 'CLEAD_FILE' ) ) {
-	define( 'CLEAD_FILE', __FILE__ );
+if ( ! defined( 'CLEAD_FILE_2' ) ) {
+	define( 'CLEAD_FILE_2', __FILE__ );
 }
-require CLEAD_PATH . 'vendor/autoload.php';
+require CLEAD_PATH_2 . 'vendor/autoload.php';
 
 if ( ! isset( $GLOBALS['wp_logs'] ) && ! class_exists( '\IARAI\Logging' ) ) {
-	require_once CLEAD_PATH . 'lib/Logging.php';
+	require_once CLEAD_PATH_2 . 'lib/Logging.php';
 }
 
-require_once CLEAD_PATH . 'inc/Plugin.php';
-\Clead\Plugin::instance();
+require_once CLEAD_PATH_2 . 'inc/Plugin.php';
+\CLead2\Plugin::instance();

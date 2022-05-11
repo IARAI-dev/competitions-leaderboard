@@ -1,6 +1,6 @@
 <?php
 
-namespace CLead;
+namespace CLead2;
 
 use Carbon_Fields\Field;
 

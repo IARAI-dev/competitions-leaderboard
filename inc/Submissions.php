@@ -1,6 +1,6 @@
 <?php
 
-namespace CLead;
+namespace CLead2;
 
 use IARAI\Logging;
 
@@ -467,7 +467,7 @@ class Submissions {
 
 			$submission = get_post( $pid ); // used in submission-item.php
 			ob_start();
-			include CLEAD_PATH . 'templates/submission-item.php';
+			include CLEAD_PATH_2 . 'templates/submission-item.php';
 			$data = ob_get_clean();
 
 			echo wp_json_encode(

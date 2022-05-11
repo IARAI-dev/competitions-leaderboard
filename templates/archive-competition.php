@@ -104,12 +104,12 @@ if ( function_exists( 'kleo_switch_layout' ) ) {
             <div id="my-submissions" class="hr-title hr-full hr-left"><abbr>My submissions</abbr></div>
 
 			<?php
-			$submissions = \CLead\Submissions::get_submissions( $competition, get_current_user_id() );
+			$submissions = \CLead2\Submissions::get_submissions( $competition, get_current_user_id() );
 
             echo '<!-- '.  count( $submissions ) .'-->';
 			if ( $submissions && count( $submissions ) > 0 ) {
 				wp_enqueue_script( 'iarai-submissions' );
-				include CLEAD_PATH . 'templates/submissions-list.php';
+				include CLEAD_PATH_2 . 'templates/submissions-list.php';
 			} else {
 				echo '<p class="submissions-no-data">You haven\'t submitted any data for this competition.</p>';
 				echo '<ul class="list-group list-submissions"></ul>';

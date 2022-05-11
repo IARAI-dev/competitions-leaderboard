@@ -7,5 +7,5 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'Carbon_Fields\\' => array($vendorDir . '/htmlburger/carbon-fields/core'),
-    'CLead\\' => array($baseDir . '/inc'),
+    'CLead2\\' => array($baseDir . '/inc'),
 );

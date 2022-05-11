@@ -8,7 +8,7 @@
  * @since Kleo 1.0
  */
 
-use CLead\Plugin;
+use CLead2\Plugin;
 
 $competition_name = '';
 $competition_link = '';

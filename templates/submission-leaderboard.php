@@ -1,7 +1,7 @@
 <?php
 global $wpdb;
 
-use CLead\Plugin;
+use CLead2\Plugin;
 
 if ( $competition == '' ) {
 	return;

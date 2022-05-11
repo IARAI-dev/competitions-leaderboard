@@ -1,6 +1,6 @@
 <?php
 
-namespace CLead;
+namespace CLead2;
 
 class Plugin {
 
@@ -17,6 +17,38 @@ class Plugin {
 	}
 
 	public function __construct() {
+
+		$autoloadPluginClassesConfig = [
+			'config' => [
+				'path' => CLEAD_PATH_2 .'inc/',
+			],
+			'classes' => [
+				'Crons',
+				'Options',
+				'SpecialSession',
+				'Submissions',
+				'Terms'
+			],
+			'loaded' => [],
+		];
+		
+		foreach ($autoloadPluginClassesConfig['classes'] as $className) {
+			
+			$classScript = $autoloadPluginClassesConfig['config']['path'] . $className .'.php';
+			
+			if (!file_exists($classScript)) {
+				$this->dd($classScript);
+			}
+
+			if (
+				!file_exists($classScript) ||
+				!empty($autoloadPluginClassesConfig['loaded'][$className])
+			) { continue; }
+		
+			require_once $classScript;
+		
+			$autoloadPluginClassesConfig['loaded'][$className] = true;
+		}
 
 		// APIs in Development
 		self::$inDevelopment = [
@@ -215,7 +247,7 @@ class Plugin {
 				$shortcode_on_page = ! empty( $post ) && has_shortcode( $post->post_content, 'competitions_app' );
 
 				if ( $competition_zone || $competition || $shortcode_on_page ) {
-					$file = CLEAD_PATH . 'templates/competition-page.php';
+					$file = CLEAD_PATH_2 . 'templates/competition-page.php';
 					if ( file_exists( $file ) ) {
 						include $file;
 						exit;
@@ -847,17 +879,17 @@ class Plugin {
 	}
 
 	public function custom_admin_css() {
-		wp_enqueue_style( 'admin-styles', CLEAD_URL . 'assets/css/admin.css' );
+		wp_enqueue_style( 'admin-styles', CLEAD_URL_2 . 'assets/css/admin.css' );
 	}
 
 
 	public function enqueue_scripts() {
 
 		// general styles
-		wp_enqueue_style( 'competitions', CLEAD_URL . 'assets/css/competition.css', array(), CLEAD_VERSION, 'all' );
+		wp_enqueue_style( 'competitions', CLEAD_URL_2 . 'assets/css/competition.css', array(), CLEAD_VERSION_2, 'all' );
 
-		wp_register_style( 'competitions-react', CLEAD_URL . 'lib/react-competitions/build/static/main.css', array(), CLEAD_VERSION, 'all' );
-		wp_register_script( 'competitions-react', CLEAD_URL . 'lib/react-competitions/build/static/main.js', array(), CLEAD_VERSION, true );
+		wp_register_style( 'competitions-react', CLEAD_URL_2 . 'lib/react-competitions/build/static/main.css', array(), CLEAD_VERSION_2, 'all' );
+		wp_register_script( 'competitions-react', CLEAD_URL_2 . 'lib/react-competitions/build/static/main.js', array(), CLEAD_VERSION_2, true );
 
 		$submit_nonce     = wp_create_nonce( 'iarai-submissions-nonce' );
 		$competition_slug = get_query_var( 'compslug' );
@@ -868,7 +900,7 @@ class Plugin {
 			'appBase'     => esc_url_raw( rtrim( is_multisite() ? get_blog_details()->path : '', '/\\' ) ),
 			'appPath'     => esc_url_raw( rtrim( is_multisite() ? get_blog_details()->path : '', '/\\' ) ),
 			'appRoute'    => '/',
-			'pluginBase'  => CLEAD_URL . 'lib/react-competitions/public',
+			'pluginBase'  => CLEAD_URL_2 . 'lib/react-competitions/public',
 			'nonce'       => wp_create_nonce( 'wp_rest' ),
 			'nonceSubmit' => $submit_nonce,
 			'ajaxurl'     => admin_url( 'admin-ajax.php' ),
@@ -887,7 +919,7 @@ class Plugin {
 			$localize_data
 		);
 
-		wp_register_script( 'iarai-submissions', CLEAD_URL . 'assets/js/submissions.js', array( 'jquery' ), false, true );
+		wp_register_script( 'iarai-submissions', CLEAD_URL_2 . 'assets/js/submissions.js', array( 'jquery' ), false, true );
 
 		wp_localize_script(
 			'iarai-submissions',
@@ -1245,7 +1277,7 @@ class Plugin {
 
 		ob_start();
 
-		require_once CLEAD_PATH . 'templates/submission-form.php';
+		require_once CLEAD_PATH_2 . 'templates/submission-form.php';
 
 		return ob_get_clean();
 	}
@@ -1454,7 +1486,7 @@ class Plugin {
 
 		ob_start();
 
-		require_once CLEAD_PATH . 'templates/submission-leaderboard.php';
+		require_once CLEAD_PATH_2 . 'templates/submission-leaderboard.php';
 
 		return ob_get_clean();
 	}
@@ -1480,7 +1512,7 @@ class Plugin {
 
 	public function research_display_type_template( $template ) {
 
-		$file = CLEAD_PATH . 'templates/archive-competition.php';
+		$file = CLEAD_PATH_2 . 'templates/archive-competition.php';
 		if ( is_tax( 'competition' ) && file_exists( $file ) ) {
 			return $file;
 		}

@@ -1,6 +1,6 @@
 <?php
 
-use CLead\Plugin;
+use CLead2\Plugin;
 
 $notes = get_post_meta( $submission->ID, '_submission_notes', true );
 $log   = '';
