@@ -226,12 +226,27 @@ class Plugin {
 	        $shortcode_on_page = ! empty( $post ) && has_shortcode( $post->post_content, 'competitions_app' );
 
 	        // Add react header on non-competitions pages
-	        if ( empty( $competition_zone ) && empty( $competition ) && ( ! $shortcode_on_page || empty( $post ) ) ) {
-                echo do_shortcode( '[competitions_app]' );
+	        if ( 
+				empty( $competition_zone ) && 
+				empty( $competition ) && 
+				( 
+					!$shortcode_on_page || 
+					empty( $post ) 
+				) 
+			) {
+
+				if (
+					!empty( $post ) &&
+					!empty( $post->post_parent )
+				) {
+					$parentPost = get_post( $post->post_parent );
+
+					if ( has_shortcode( $parentPost->post_content, 'competitions_app' ) ) {
+						echo do_shortcode( '[competitions_app]' );
+						remove_action( 'kleo_header', 'kleo_show_header' );
+					}
+				}
 	        }
-
-	        remove_action( 'kleo_header', 'kleo_show_header' );
-
         }, 9 );
 
 		/**
