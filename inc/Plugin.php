@@ -599,7 +599,7 @@ class Plugin {
 
 			if (empty($eventsSetup)) { return new \WP_REST_Response( $events, 200 ); }
 
-			$namePrefix = \CLead\SpecialSession::getNamePrefix();
+			$namePrefix = \CLead2\SpecialSession::getNamePrefix();
 			$userIsLogged = $this->isUserLoggedIn();
 
 			$convertMap = [
