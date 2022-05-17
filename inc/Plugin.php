@@ -243,10 +243,11 @@ class Plugin {
 
 					if ( has_shortcode( $parentPost->post_content, 'competitions_app' ) ) {
 						echo do_shortcode( '[competitions_app]' );
-						remove_action( 'kleo_header', 'kleo_show_header' );
 					}
 				}
 	        }
+
+			remove_action( 'kleo_header', 'kleo_show_header' );
         }, 9 );
 
 		/**
