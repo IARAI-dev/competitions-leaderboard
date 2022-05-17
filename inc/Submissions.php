@@ -253,7 +253,7 @@ class Submissions {
 
 			// if the leaderboard isn't in the dates range.
 			$leaderboard_not_started = ! empty( $leaderboard_data['competition_start_date'] ) && strtotime( $leaderboard_data['competition_start_date'] . ' ' . $leaderboard_data['timezone_start_date'] ) > strtotime( 'now ' . $leaderboard_data['timezone_start_date'] );
-			$leaderboard_ended = ! empty( $leaderboard_data['competition_end_date'] ) && strtotime( $leaderboard_data['competition_end_date'] . ' ' . $leaderboard_data['timezone_end_date'] ) > strtotime( 'now ' . $leaderboard_data['timezone_end_date'] );
+			$leaderboard_ended = ! empty( $leaderboard_data['competition_end_date'] ) && strtotime( $leaderboard_data['competition_end_date'] . ' ' . $leaderboard_data['timezone_end_date'] ) <= strtotime( 'now ' . $leaderboard_data['timezone_end_date'] );
 
 			if ( $leaderboard_not_started || $leaderboard_ended ) {
 				$errors['general'] = '<div class="alert alert-warning">You cannot submit to this leaderboard.</div>';
