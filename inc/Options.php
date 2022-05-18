@@ -94,7 +94,7 @@ class Options {
 			};
 
 			$competition_fields =
-				Container::make( 'term_meta', __( 'Term Options', 'competitions-leaderboard' ) )
+				Container::make( 'term_meta', 'competitions-leaderboard-v2', __( 'Term Options', 'competitions-leaderboard' ) )
 				         ->where( 'term_taxonomy', '=', 'competition' );
 
 			$competition_fields

@@ -14,3 +14,12 @@
 #delete-link {
     display: none;
 }
+
+/* V1 Fields Hide - Visual only */
+body.taxonomy-competition .container-carbon_fields_container_term_options {
+    display: none;
+}
+
+body.taxonomy-competition tr[class="form-field"] {
+    display: none !important;
+}
