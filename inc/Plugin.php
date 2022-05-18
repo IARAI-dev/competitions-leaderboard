@@ -243,11 +243,10 @@ class Plugin {
 
 					if ( has_shortcode( $parentPost->post_content, 'competitions_app' ) ) {
 						echo do_shortcode( '[competitions_app]' );
+						remove_action( 'kleo_header', 'kleo_show_header' );
 					}
 				}
 	        }
-
-			remove_action( 'kleo_header', 'kleo_show_header' );
         }, 9 );
 
 		/**
@@ -272,21 +271,31 @@ class Plugin {
 			}
 		);
 
+		// Generate the new Competition Header for L4S only - Conflict with v1
 		add_action( 'wp', array( $this, 'general_layout_changes' ) );
 	}
 
 	public function general_layout_changes() {
 
+		$requestUri = $_SERVER['REQUEST_URI'];	
+		preg_match_all('!\d+!', $requestUri, $requestUriNumberMatches);		
+
 		if ( ! is_multisite() ) {
+			return;
+		}
+
+		// set logo back to regular one
+		remove_all_filters( 'kleo_logo_href', 10 );
+
+		if (
+			!empty($requestUriNumberMatches) &&
+			count($requestUriNumberMatches[0]) > 1
+		) {
 			return;
 		}
 
 		// Replace header with main site header
 		add_action( 'kleo_header', array( $this, 'main_site_header' ), 8 );
-
-		// set logo back to regular one
-		remove_all_filters( 'kleo_logo_href', 10 );
-
 	}
 
 	/**

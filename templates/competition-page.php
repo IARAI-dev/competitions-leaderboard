@@ -39,8 +39,25 @@ if ( ! empty( $competition_slug ) && get_term_by( 'slug', $competition_slug, 'co
 $zone_name = str_replace( str_replace( array( 'https://', 'http://' ), '', home_url( '/' ) ), '', $_SERVER['HTTP_HOST'] . explode( '?', $_SERVER['REQUEST_URI'], 2 )[0] );
 $zone_name = ltrim( str_replace( $competition_link, '', $zone_name ), '/' );
 
-// Remove site header.
-remove_action( 'kleo_header', 'kleo_show_header' );
+// Remove site header (only for L4S) - Conflicts with v1
+remove_action( 'kleo_header', 'kleo_show_header' );	
+
+add_filter('body_class', function($wp_classes, $extra_classes) {
+	$new_wp_classes = [];
+
+	if (!empty($wp_classes)) {
+		foreach ($wp_classes as $wp_class) {
+			if (
+				empty($wp_class) ||
+				$wp_class === 'navbar-resize'
+			) { continue; }
+
+			$new_wp_classes[] = $wp_class;
+		}
+	}
+
+	return $new_wp_classes;
+}, 10, 2);
 
 get_header(); ?>
 

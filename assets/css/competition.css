@@ -2,7 +2,7 @@
   display: none !important;
 }
 
-.header-color .logo img {
+body:not(.navbar-resize) .header-color .logo img {
   padding-top: 17px;
   padding-bottom: 17px;
   display: inline-block;
