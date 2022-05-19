@@ -905,6 +905,8 @@ class Plugin {
 
 	public function custom_admin_css() {
 		wp_enqueue_style( 'admin-styles', CLEAD_URL_2 . 'assets/css/admin.css' );
+
+		wp_enqueue_script( 'admin-scripts', CLEAD_URL_2 . 'assets/js/admin.js', ['jquery'], false );
 	}
 
 
