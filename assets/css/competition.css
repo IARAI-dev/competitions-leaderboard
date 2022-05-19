@@ -8,6 +8,8 @@ body:not(.navbar-resize) .header-color .logo img {
   display: inline-block;
 }
 
-.alternate-color .logo img {
+body:not(.forum) .alternate-color .logo img {
   margin-top: 10px;
 }
+
+#traffic4cast-2022 ~ #the-data { display: none; }

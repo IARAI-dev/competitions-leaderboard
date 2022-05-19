@@ -289,9 +289,39 @@ class Plugin {
 
 		if (
 			!empty($requestUriNumberMatches) &&
-			count($requestUriNumberMatches[0]) > 1
+			count($requestUriNumberMatches[0]) > 1 &&
+			(
+				!in_array(2022, $requestUriNumberMatches[0]) &&
+				!in_array('2022', $requestUriNumberMatches[0])
+			)
 		) {
 			return;
+		} elseif (
+			!empty($requestUriNumberMatches) &&
+			count($requestUriNumberMatches[0]) > 1 &&
+			(
+				in_array(2022, $requestUriNumberMatches[0]) ||
+				in_array('2022', $requestUriNumberMatches[0])
+			)
+		) {
+			remove_action( 'kleo_header', 'kleo_show_header' );
+
+			add_filter('body_class', function($wp_classes, $extra_classes) {
+				$new_wp_classes = [];
+			
+				if (!empty($wp_classes)) {
+					foreach ($wp_classes as $wp_class) {
+						if (
+							empty($wp_class) ||
+							$wp_class === 'navbar-resize'
+						) { continue; }
+			
+						$new_wp_classes[] = $wp_class;
+					}
+				}
+			
+				return $new_wp_classes;
+			}, 10, 2);			
 		}
 
 		// Replace header with main site header
