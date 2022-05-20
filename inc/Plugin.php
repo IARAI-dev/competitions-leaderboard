@@ -284,12 +284,12 @@ class Plugin {
 			return;
 		}
 
-		// set logo back to regular one
-		remove_all_filters( 'kleo_logo_href', 10 );
-
 		if (
 			!empty($requestUriNumberMatches) &&
-			count($requestUriNumberMatches[0]) > 1 &&
+			(
+				count($requestUriNumberMatches[0]) > 1  ||
+				strpos($requestUri, 'forums') !== false
+			) &&
 			(
 				!in_array(2022, $requestUriNumberMatches[0]) &&
 				!in_array('2022', $requestUriNumberMatches[0])
@@ -323,6 +323,9 @@ class Plugin {
 				return $new_wp_classes;
 			}, 10, 2);			
 		}
+
+		// set logo back to regular one
+		remove_all_filters( 'kleo_logo_href', 10 );
 
 		// Replace header with main site header
 		add_action( 'kleo_header', array( $this, 'main_site_header' ), 8 );
