@@ -763,6 +763,8 @@ class Plugin {
 				'competition_bullets',
 				'competition_main_image',
 				'competition_main_video',
+				'competition_connect_forum',
+				'competition_challenges',
 			),
 			'connect'   => array(
 				'competition_connect_forum',
@@ -864,6 +866,17 @@ class Plugin {
 			);
 		}
 
+		if ($page === 'home') {
+			
+			$eventsSetup = carbon_get_term_meta($competition->term_id, 'special_session_event_setup');
+
+			$data['ctas'] = [
+				'forum' => !empty($data['competition_connect_forum']),
+				'challenges' => !empty($data['competition_challenges']),
+				'events' => !empty($eventsSetup),
+			];
+		}
+		
 		return new \WP_REST_Response( $data, 200 );
 	}
 
