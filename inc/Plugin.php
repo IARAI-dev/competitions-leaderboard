@@ -508,16 +508,30 @@ class Plugin {
 			$emailTemplate = str_replace($tag, $value, $emailTemplate);
 		}
 
+		$args = array(
+			'taxonomy'   => 'competition',
+			'hide_empty' => false,
+			'meta_key'   => '_competition_is_main',
+			'meta_value' => 'yes',
+		);
+
+		$terms = get_terms( $args );
+		$competition = $terms[0];
+
 		$emailData = [
-			'to' => get_bloginfo('admin_email'),
+			'to' => carbon_get_term_meta( $competition->term_id, 'competition_connect_contact' ),
 			'subject' => 'New email from '. get_bloginfo('name') .' website',
 			'body' => trim($emailTemplate),
 		];
-
-		$isEmailSent = wp_mail(
-			$emailData['to'],
-			$emailData['subject'],
-			$emailData['body']
+		
+		$isEmailSent = (
+			!empty($emailData['to']) ?
+			wp_mail(
+				$emailData['to'],
+				$emailData['subject'],
+				$emailData['body']
+			) :
+			false
 		);
 
 		if (!$isEmailSent) {
